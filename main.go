@@ -14,9 +14,6 @@ import (
 var initial_url *string
 
 func init() {
-	// if event handling must run on the main OS thread, then enable next line
-	// runtime.LockOSThread()
-
 	prefix := fmt.Sprintf("[%d] ", os.Getpid())
 	log.SetOutput(os.Stdout)
 	log.SetPrefix(prefix)
