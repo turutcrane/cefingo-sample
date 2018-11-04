@@ -5,10 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/turutcrane/cefingo"
+	"goji.io"
+	"goji.io/pat"
 )
 
 var initial_url *string
@@ -23,11 +27,15 @@ func init() {
 var cefClient *cefingo.CClientT
 
 func main() {
+	defer log.Println("L31: Graceful Shutdowned")
+	log.Println("L33: started:", "Pid:", os.Getpid(), "PPid:", os.Getppid(), os.Args)
+	// Exit when parant (go command) is exited.
 	go func() {
 		ppid := os.Getppid()
 		proc, _ := os.FindProcess(ppid)
 		status, _ := proc.Wait()
 		log.Println("Parent:", ppid, status)
+		time.Sleep(5 * time.Second)
 		os.Exit(0)
 	}()
 	// cefingo.RefCountLogOutput(true)
@@ -46,32 +54,42 @@ func main() {
 	app := myApp{}
 	cefApp := cefingo.AllocCApp(&app)
 	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
+
 	cefingo.ExecuteProcess(cefApp)
 
-	initial_url = flag.String("url", "https://www.google.com/", "URL")
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		log.Fatalln("L38:", err)
+	}
+	addr := l.Addr().String()
+	log.Println("L33:", addr)
+
+	initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
 	flag.Parse()
 
 	s := cefingo.Settings{}
-	s.LogSeverity = cefingo.LogSeverityWarning
+	s.LogSeverity = cefingo.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
 	cefingo.Initialize(s, cefApp)
 
+	mux := goji.NewMux()
+	mux.Handle(pat.Get("/html/*"), http.StripPrefix("/html", http.FileServer(http.Dir("./html"))))
+	mux.Handle(pat.Get("/wasm/*"), http.StripPrefix("/wasm", http.FileServer(http.Dir("./wasm"))))
+
+	srv := &http.Server{Handler: mux}
+
+	go func() {
+		if err := srv.Serve(l); err != http.ErrServerClosed {
+			log.Fatalln("L50:", err)
+		}
+	}()
+
 	cefingo.RunMessageLoop()
 	defer cefingo.Shutdown()
 
-}
-
-func addValueToContext(key interface{}, value interface{}) func(http.Handler) http.Handler {
-	return func(inner http.Handler) http.Handler {
-		mw := func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, key, value)
-			r = r.WithContext(ctx)
-			inner.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(mw)
-	}
+	ctx := context.Background()
+	srv.Shutdown(ctx)
 }
 
 type myLifeSpanHandler struct {
@@ -79,6 +97,7 @@ type myLifeSpanHandler struct {
 }
 
 func (*myLifeSpanHandler) OnBeforeClose(self *cefingo.CLifeSpanHandlerT, brwoser *cefingo.CBrowserT) {
+	cefingo.Logf("L89:")
 	cefingo.QuitMessageLoop()
 }
 
@@ -87,6 +106,7 @@ type myBrowserProcessHandler struct {
 }
 
 func (*myBrowserProcessHandler) OnContextInitialized(sef *cefingo.CBrowserProcessHandlerT) {
+	cefingo.Logf("L108:")
 	cefingo.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
 }
 
