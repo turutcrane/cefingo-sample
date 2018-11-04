@@ -13,11 +13,11 @@ Supported Environmant is Windows 64bit only.
 Open google.com.
 
 1. Change Directory
-    ```
+    ```bat
     C:> cd simple
     ```
 1. Run sample program
-    ```
+    ```bat
     C:> go run main.go
     ```
 ## Sample 2
@@ -25,17 +25,17 @@ Open google.com.
 Wasm sample with http server
 
 1. Cange Directory
-    ```
+    ```bat
     C:> cd wasm-http
     ```
 1. Build wasm module
-    ```
+    ```bat
     C:> cd wasm
     C:> build
     C:> ..
     ```
 1. Run sample program
-    ```
+    ```bat
     C:> go run main.go
     ``
 
@@ -44,16 +44,16 @@ Wasm sample with http server
 Wasm sample without http server
 
 1. Cange Directory
-    ```
+    ```bat
     C:> cd wasm-nohttp
     ```
 1. Build wasm module
-    ```
+    ```bat
     C:> cd wasm
     C:> build
     C:> ..
     ```
 1. Run sample program
-    ```
+    ```bat
     C:> go run main.go
-    ``
+    ```
