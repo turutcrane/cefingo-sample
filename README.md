@@ -38,3 +38,22 @@ Wasm sample with http server
     ```
     C:> go run main.go
     ``
+
+## Sample 3
+
+Wasm sample without http server
+
+1. Cange Directory
+    ```
+    C:> cd wasm-nohttp
+    ```
+1. Build wasm module
+    ```
+    C:> cd wasm
+    C:> build
+    C:> ..
+    ```
+1. Run sample program
+    ```
+    C:> go run main.go
+    ``
