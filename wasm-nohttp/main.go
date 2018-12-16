@@ -42,22 +42,22 @@ func main() {
 	// cefingo.LogOutput(true)
 
 	life_span_handler := myLifeSpanHandler{}
-	cLifeSpanHandler := cefingo.AllocCLifeSpanHandler(&life_span_handler)
+	cLifeSpanHandler := cefingo.AllocCLifeSpanHandlerT(&life_span_handler)
 
 	browser_process_handler := myBrowserProcessHandler{}
-	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandler(&browser_process_handler)
+	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandlerT(&browser_process_handler)
 
 	client := myClient{}
 	cefClient = cefingo.AllocCClient(&client)
-	cefingo.AssocLifeSpanHandler(cefClient, cLifeSpanHandler)
+	cefClient.AssocLifeSpanHandler(cLifeSpanHandler)
 
 	app := myApp{}
-	cefApp := cefingo.AllocCApp(&app)
+	cefApp := cefingo.AllocCAppT(&app)
 	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
 
 	render_process_handler := myRenderProcessHander{}
-	cRenderProcessHandler := cefingo.AllocCRenderProcessHandler(&render_process_handler)
-	cefingo.AssocRenderProcessHandler(cefApp, cRenderProcessHandler)
+	cRenderProcessHandler := cefingo.AllocCRenderProcessHandlerT(&render_process_handler)
+	cefApp.AssocRenderProcessHandler(cRenderProcessHandler)
 
 	cefingo.ExecuteProcess(cefApp)
 
@@ -114,7 +114,7 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	frame *cefingo.CFrameT,
 	context *cefingo.CV8contextT,
 ) {
-	global := cefingo.GetGlobal(context)
+	global := context.GetGlobal()
 	defer cefingo.BaseRelease(global)
 
 	my := cefingo.V8valueCreateObject(nil, nil)
@@ -123,8 +123,8 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	you := cefingo.V8valueCreateString("Wasm without Http Server")
 	defer cefingo.BaseRelease(you)
 
-	cefingo.SetValueBykey(global, "my", my)
-	cefingo.SetValueBykey(my, "you", you)
+	global.SetValueBykey("my", my)
+	my.SetValueBykey("you", you)
 
 	wasm, err := ioutil.ReadFile("wasm/test.wasm") // just pass the file name
 	if err != nil {
@@ -135,7 +135,7 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	cefingo.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
 	defer cefingo.BaseRelease(v8wasm)
 
-	cefingo.SetValueBykey(my, "wasm", v8wasm)
+	my.SetValueBykey("wasm", v8wasm)
 
 	cefingo.Logf("L156:")
 }

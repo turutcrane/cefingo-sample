@@ -34,17 +34,17 @@ func main() {
 	// cefingo.LogOutput(true)
 
 	life_span_handler := myLifeSpanHandler{}
-	cLifeSpanHandler := cefingo.AllocCLifeSpanHandler(&life_span_handler)
+	cLifeSpanHandler := cefingo.AllocCLifeSpanHandlerT(&life_span_handler)
 
 	browser_process_handler := myBrowserProcessHandler{}
-	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandler(&browser_process_handler)
+	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandlerT(&browser_process_handler)
 
 	client := myClient{}
 	cefClient = cefingo.AllocCClient(&client)
-	cefingo.AssocLifeSpanHandler(cefClient, cLifeSpanHandler)
+	cefClient.AssocLifeSpanHandler(cLifeSpanHandler)
 
 	app := myApp{}
-	cefApp := cefingo.AllocCApp(&app)
+	cefApp := cefingo.AllocCAppT(&app)
 	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
 	cefingo.ExecuteProcess(cefApp)
 
