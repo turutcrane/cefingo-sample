@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	// "fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -17,10 +17,9 @@ import (
 var initial_url *string
 
 func init() {
-
-	prefix := fmt.Sprintf("[%d] ", os.Getpid())
-	log.SetOutput(os.Stdout)
-	log.SetPrefix(prefix)
+	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
+	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
+	// cefingo.RefCountLogOutput(true)
 
 }
 
@@ -38,8 +37,6 @@ func main() {
 		time.Sleep(5 * time.Second)
 		os.Exit(0)
 	}()
-	// cefingo.RefCountLogOutput(true)
-	// cefingo.LogOutput(true)
 
 	life_span_handler := myLifeSpanHandler{}
 	cLifeSpanHandler := cefingo.AllocCLifeSpanHandlerT(&life_span_handler)
