@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"time"
-	"unsafe"
 
 	"github.com/turutcrane/cefingo"
 	"github.com/turutcrane/cefingo/v8"
@@ -25,14 +24,15 @@ const index_text = `
 </html>
 `
 
-const inner_text =`
+const inner_text = `
 <div>
   <p>Hello Cefingo!!</p>
   <button id="B1">Button B1</button>
+  <p id="P1"></p>
 </div>
 `
 
-const css_text =`
+const css_text = `
 body {
   font-size:30px;
 }
@@ -45,7 +45,7 @@ body {
 func init() {
 	prefix := fmt.Sprintf("[%d] ", os.Getpid())
 	cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
-	cefingo.RefCountLogOutput(true)
+	// cefingo.RefCountLogOutput(true)
 
 }
 
@@ -88,6 +88,7 @@ func main() {
 	s.LogSeverity = cefingo.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
+	// s.RemoteDebuggingPort = 8088
 	cefingo.Initialize(s, cefApp)
 
 	cefingo.RunMessageLoop()
@@ -189,7 +190,7 @@ func (factory *mySchemeHandlerFactory) Create(
 
 type myResourceHandler struct {
 	cefingo.DefaultResourceHandler
-	r *cefingo.CRequestT
+	r    *cefingo.CRequestT
 	text string
 	mime string
 }
@@ -262,8 +263,6 @@ func (*myLoadHandler) OnLoadEnd(
 	frame *cefingo.CFrameT,
 	httpStatusCode int,
 ) {
-	cefingo.Logf("L271: b:%p f:%p s:%d %t", browser, frame, httpStatusCode, cefingo.V8contextInContext())
-	cefingo.Logf("L274: size of %T is %d", self, unsafe.Sizeof(self))
 	context := frame.GetV8context()
 	defer cefingo.BaseRelease(context)
 
@@ -276,6 +275,7 @@ func (*myLoadHandler) OnLoadEnd(
 
 		v, err := c.GetElementById("body")
 		if err == nil {
+			defer v.Release()
 			cefingo.Logf("L289: %v", v.HasValueBykey("innerHTML"))
 			html := v8.CreateString(inner_text)
 			v.SetValueBykey("innerHTML", html)
@@ -284,9 +284,12 @@ func (*myLoadHandler) OnLoadEnd(
 		if err != nil {
 			cefingo.Logf("L300: %v", err)
 		} else {
+			defer v.Release()
 			v.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
-				cefingo.Logf("L301: B1 Clicked")
-				_, err := c.EvalString("alert('B1 Clicked: ' + my.msg);")
+				c1 := v8.GetContext()
+				defer v8.ReleaseContext(c1)
+				// _, err := c1.EvalString("alert('B1 Clicked: ' + my.msg);")
+				c1.Alertf("B1 Clicked: %t", c1.V8context.IsSame(c.V8context))
 				return err
 			})
 		}
