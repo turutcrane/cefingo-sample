@@ -20,31 +20,32 @@ const index_text = `
 <link rel="stylesheet" type="text/css" href="/css/mystyle.css">
 </head>
 <body ID="body">
-</body>
-</html>
-`
-
-const inner_text = `
 <div>
   <p>Hello Cefingo!!</p>
   <button id="B1">Button B1</button>
-  <p id="P1"></p>
+  <br><br>
+  <button id="B2">Button B2</button>
+  <div id="DIV1"></div>
 </div>
+</body>
+</html>
 `
-
 const css_text = `
 body {
   font-size:30px;
 }
-#B1 {
+button {
   font-size: 20px;
   color: MediumSeaGreen;
+}
+#B2 {
+  color: FireBrick;
 }
 `
 
 func init() {
-	prefix := fmt.Sprintf("[%d] ", os.Getpid())
-	cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
+	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
+	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
 	// cefingo.RefCountLogOutput(true)
 
 }
@@ -273,27 +274,49 @@ func (*myLoadHandler) OnLoadEnd(
 		defer v8.ReleaseContext(c)
 		cefingo.Logf("L284: is_same:%t", context.IsSame(c.V8context))
 
-		v, err := c.GetElementById("body")
+		b1, err := c.GetElementById("B1")
 		if err == nil {
-			defer v.Release()
-			cefingo.Logf("L289: %v", v.HasValueBykey("innerHTML"))
-			html := v8.CreateString(inner_text)
-			v.SetValueBykey("innerHTML", html)
-		}
-		v, err = c.GetElementById("B1")
-		if err != nil {
-			cefingo.Logf("L300: %v", err)
-		} else {
-			defer v.Release()
-			v.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
+			defer b1.Release()
+			b1.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
 				c1 := v8.GetContext()
 				defer v8.ReleaseContext(c1)
 				// _, err := c1.EvalString("alert('B1 Clicked: ' + my.msg);")
-				c1.Alertf("B1 Clicked: %t", c1.V8context.IsSame(c.V8context))
+				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("04:05"))
+				return nil
+			})
+		} else {
+			cefingo.Logf("L300: %v", err)
+		}
+
+		b2, err := c.GetElementById("B2")
+		if err == nil {
+			defer b2.Release()
+			b2.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
+				c2 := v8.GetContext()
+				defer v8.ReleaseContext(c2)
+				p1, err := c.GetElementById("DIV1")
+				if err == nil {
+					html := v8.CreateString(fmt.Sprintf("<p>Hello, Umeda-Go! %s</p>", time.Now().Format("03:04:05 MST")))
+					p1.SetValueBykey("innerHTML", html)
+				}
 				return err
 			})
+		} else {
+			cefingo.Logf("L302: Did not hab #B2 element.: %v", err)
 		}
-	} else {
-		cefingo.Logf("L293: Did not enterd in V8 Context")
 	}
 }
+// Example of get a string value of js variable
+//   <script>
+//	var cef = {};
+//	cef.msg = "A message";
+//   </script>
+// func get_cef_msg(c *v8.Context) string {
+// 	cef := c.Global.GetValueBykey("cef")
+// 	defer cefingo.BaseRelease(cef)
+// 	msg := cef.GetValueBykey("msg")
+// 	defer cefingo.BaseRelease(msg)
+//
+// 	s := msg.GetString()
+// 	return s
+// }
