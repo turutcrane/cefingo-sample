@@ -281,7 +281,7 @@ func (*myLoadHandler) OnLoadEnd(
 				c1 := v8.GetContext()
 				defer v8.ReleaseContext(c1)
 				// _, err := c1.EvalString("alert('B1 Clicked: ' + my.msg);")
-				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("04:05"))
+				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("03:04:05"))
 				return nil
 			})
 		} else {

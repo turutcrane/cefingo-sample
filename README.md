@@ -10,7 +10,7 @@ Supported Environmant is Windows 64bit only.
 
 ## Sample 1
 
-Open google.com.
+Open golang.org.
 
 1. Change Directory
     ```bat
@@ -18,7 +18,7 @@ Open google.com.
     ```
 1. Run sample program
     ```bat
-    C:> go run main.go
+    C:> go run main.go -url golang.org
     ```
 ## Sample 2
 
@@ -32,12 +32,12 @@ Wasm sample with http server
     ```bat
     C:> cd wasm
     C:> build
-    C:> ..
+    C:> cd ..
     ```
 1. Run sample program
     ```bat
     C:> go run main.go
-    ``
+    ```
 
 ## Sample 3
 
@@ -51,7 +51,20 @@ Wasm sample without http server
     ```bat
     C:> cd wasm
     C:> build
-    C:> ..
+    C:> cd ..
+    ```
+1. Run sample program
+    ```bat
+    C:> go run main.go
+    ```
+
+## Sample 4
+
+A Sample without http server, wasm and JS. Only Go.
+
+1. Cange Directory
+    ```bat
+    C:> cd onlygo
     ```
 1. Run sample program
     ```bat
