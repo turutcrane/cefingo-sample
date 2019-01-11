@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/turutcrane/cefingo"
@@ -44,6 +45,10 @@ button {
 `
 
 func init() {
+	// cefingo.Initialize(i.e. cef_initialize) and some function should be called on
+	// the main application thread to initialize the CEF browser process
+	runtime.LockOSThread()
+
 	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
 	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
 	// cefingo.RefCountLogOutput(true)
@@ -280,7 +285,7 @@ func (*myLoadHandler) OnLoadEnd(
 			b1.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
 				c1 := v8.GetContext()
 				defer v8.ReleaseContext(c1)
-				// _, err := c1.EvalString("alert('B1 Clicked: ' + my.msg);")
+				// _, err := c1.Eval("alert('B1 Clicked: ' + my.msg);")
 				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("03:04:05"))
 				return nil
 			})
@@ -306,6 +311,7 @@ func (*myLoadHandler) OnLoadEnd(
 		}
 	}
 }
+
 // Example of get a string value of js variable
 //   <script>
 //	var cef = {};

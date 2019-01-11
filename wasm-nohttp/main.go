@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"runtime"
 	// "fmt"
 	"html/template"
 	"io/ioutil"
@@ -17,6 +18,9 @@ import (
 var initial_url *string
 
 func init() {
+	// cefingo.Initialize(i.e. cef_initialize) and some function should be called on
+	// the main application thread to initialize the CEF browser process
+	runtime.LockOSThread()
 	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
 	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
 	// cefingo.RefCountLogOutput(true)
