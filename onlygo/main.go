@@ -282,13 +282,13 @@ func (*myLoadHandler) OnLoadEnd(
 		b1, err := c.GetElementById("B1")
 		if err == nil {
 			defer b1.Release()
-			b1.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
+			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(*cefingo.CV8valueT) error {
 				c1 := v8.GetContext()
 				defer v8.ReleaseContext(c1)
 				// _, err := c1.Eval("alert('B1 Clicked: ' + my.msg);")
 				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("03:04:05"))
 				return nil
-			})
+			}))
 		} else {
 			cefingo.Logf("L300: %v", err)
 		}
@@ -296,16 +296,17 @@ func (*myLoadHandler) OnLoadEnd(
 		b2, err := c.GetElementById("B2")
 		if err == nil {
 			defer b2.Release()
-			b2.AddEventListener(v8.EventClick, func(*cefingo.CV8valueT) error {
-				c2 := v8.GetContext()
-				defer v8.ReleaseContext(c2)
-				p1, err := c.GetElementById("DIV1")
-				if err == nil {
-					html := v8.CreateString(fmt.Sprintf("<p>Hello, Umeda-Go! %s</p>", time.Now().Format("03:04:05 MST")))
-					p1.SetValueBykey("innerHTML", html)
-				}
-				return err
-			})
+			b2.AddEventListener(v8.EventClick, v8.EventHandlerFunc(
+				func(*cefingo.CV8valueT) error {
+					c2 := v8.GetContext()
+					defer v8.ReleaseContext(c2)
+					p1, err := c.GetElementById("DIV1")
+					if err == nil {
+						html := v8.CreateString(fmt.Sprintf("<p>Hello, Umeda-Go! %s</p>", time.Now().Format("03:04:05 MST")))
+						p1.SetValueBykey("innerHTML", html)
+					}
+					return err
+				}))
 		} else {
 			cefingo.Logf("L302: Did not hab #B2 element.: %v", err)
 		}
