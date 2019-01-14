@@ -51,7 +51,7 @@ func main() {
 	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
 	cefingo.ExecuteProcess(cefApp)
 
-	initial_url = flag.String("url", "https://www.google.com/", "URL")
+	initial_url = flag.String("url", "https://www.golang.org/", "URL")
 	flag.Parse()
 
 	s := cefingo.Settings{}
