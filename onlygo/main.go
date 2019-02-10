@@ -282,7 +282,7 @@ func (*myLoadHandler) OnLoadEnd(
 		b1, err := c.GetElementById("B1")
 		if err == nil {
 			defer b1.Release()
-			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(*cefingo.CV8valueT) error {
+			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(object v8.Value, event v8.Value) error {
 				c1 := v8.GetContext()
 				defer v8.ReleaseContext(c1)
 				// _, err := c1.Eval("alert('B1 Clicked: ' + my.msg);")
@@ -297,7 +297,7 @@ func (*myLoadHandler) OnLoadEnd(
 		if err == nil {
 			defer b2.Release()
 			b2.AddEventListener(v8.EventClick, v8.EventHandlerFunc(
-				func(*cefingo.CV8valueT) error {
+				func(object v8.Value, event v8.Value) error {
 					c2 := v8.GetContext()
 					defer v8.ReleaseContext(c2)
 					p1, err := c.GetElementById("DIV1")
