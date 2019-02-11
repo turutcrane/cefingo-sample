@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/turutcrane/cefingo"
 	"github.com/turutcrane/cefingo/v8"
 )
@@ -275,7 +276,11 @@ func (*myLoadHandler) OnLoadEnd(
 	if context.Enter() {
 		defer context.Exit()
 
-		c := v8.GetContext()
+		c, err := v8.GetContext()
+		if err != nil {
+			cefingo.Logf("280: get context; %+v", err)
+			return
+		}
 		defer v8.ReleaseContext(c)
 		cefingo.Logf("L284: is_same:%t", context.IsSame(c.V8context))
 
@@ -283,7 +288,10 @@ func (*myLoadHandler) OnLoadEnd(
 		if err == nil {
 			defer b1.Release()
 			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(object v8.Value, event v8.Value) error {
-				c1 := v8.GetContext()
+				c1, err := v8.GetContext()
+				if err != nil {
+					return errors.Wrap(err, "get context")
+				}
 				defer v8.ReleaseContext(c1)
 				// _, err := c1.Eval("alert('B1 Clicked: ' + my.msg);")
 				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("03:04:05"))
@@ -298,7 +306,10 @@ func (*myLoadHandler) OnLoadEnd(
 			defer b2.Release()
 			b2.AddEventListener(v8.EventClick, v8.EventHandlerFunc(
 				func(object v8.Value, event v8.Value) error {
-					c2 := v8.GetContext()
+					c2, err := v8.GetContext()
+					if err != nil {
+						return errors.Wrap(err, "E311: get context")
+					}
 					defer v8.ReleaseContext(c2)
 					p1, err := c.GetElementById("DIV1")
 					if err == nil {
