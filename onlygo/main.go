@@ -76,7 +76,7 @@ func main() {
 
 	app := myApp{}
 	cefApp := cefingo.AllocCAppT(&app)
-	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
+	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
 
 	render_process_handler := myRenderProcessHander{}
 	cRenderProcessHandler := cefingo.AllocCRenderProcessHandlerT(&render_process_handler)
@@ -150,13 +150,10 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	context *cefingo.CV8contextT,
 ) {
 	global := context.GetGlobal()
-	defer cefingo.BaseRelease(global)
 
 	my := cefingo.V8valueCreateObject(nil, nil)
-	defer cefingo.BaseRelease(my)
 
 	msg := cefingo.V8valueCreateString("Cefingo Hello")
-	defer cefingo.BaseRelease(msg)
 
 	global.SetValueBykey("my", my)
 	my.SetValueBykey("msg", msg)
@@ -271,7 +268,6 @@ func (*myLoadHandler) OnLoadEnd(
 	httpStatusCode int,
 ) {
 	context := frame.GetV8context()
-	defer cefingo.BaseRelease(context)
 
 	if context.Enter() {
 		defer context.Exit()
@@ -281,18 +277,15 @@ func (*myLoadHandler) OnLoadEnd(
 			cefingo.Logf("280: get context; %+v", err)
 			return
 		}
-		defer v8.ReleaseContext(c)
 		cefingo.Logf("L284: is_same:%t", context.IsSame(c.V8context))
 
 		b1, err := c.GetElementById("B1")
 		if err == nil {
-			defer b1.Release()
 			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(object v8.Value, event v8.Value) error {
 				c1, err := v8.GetContext()
 				if err != nil {
 					return errors.Wrap(err, "get context")
 				}
-				defer v8.ReleaseContext(c1)
 				// _, err := c1.Eval("alert('B1 Clicked: ' + my.msg);")
 				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("03:04:05"))
 				return nil
@@ -303,15 +296,13 @@ func (*myLoadHandler) OnLoadEnd(
 
 		b2, err := c.GetElementById("B2")
 		if err == nil {
-			defer b2.Release()
 			b2.AddEventListener(v8.EventClick, v8.EventHandlerFunc(
 				func(object v8.Value, event v8.Value) error {
 					c2, err := v8.GetContext()
 					if err != nil {
 						return errors.Wrap(err, "E311: get context")
 					}
-					defer v8.ReleaseContext(c2)
-					p1, err := c.GetElementById("DIV1")
+					p1, err := c2.GetElementById("DIV1")
 					if err == nil {
 						html := v8.CreateString(fmt.Sprintf("<p>Hello, Umeda-Go! %s</p>", time.Now().Format("03:04:05 MST")))
 						p1.SetValueBykey("innerHTML", html)

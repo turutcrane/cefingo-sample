@@ -55,7 +55,7 @@ func main() {
 
 	app := myApp{}
 	cefApp := cefingo.AllocCAppT(&app)
-	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
+	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
 
 	cefingo.ExecuteProcess(cefApp)
 

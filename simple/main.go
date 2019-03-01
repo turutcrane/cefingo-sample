@@ -48,7 +48,7 @@ func main() {
 
 	app := myApp{}
 	cefApp := cefingo.AllocCAppT(&app)
-	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
+	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
 	cefingo.ExecuteProcess(cefApp)
 
 	initial_url = flag.String("url", "https://www.golang.org/", "URL")

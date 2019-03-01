@@ -54,7 +54,7 @@ func main() {
 
 	app := myApp{}
 	cefApp := cefingo.AllocCAppT(&app)
-	cefingo.AssocBrowserProcessHandler(cefApp, cBrowserProcessHandler)
+	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
 
 	render_process_handler := myRenderProcessHander{}
 	cRenderProcessHandler := cefingo.AllocCRenderProcessHandlerT(&render_process_handler)
@@ -116,13 +116,10 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	context *cefingo.CV8contextT,
 ) {
 	global := context.GetGlobal()
-	defer cefingo.BaseRelease(global)
 
 	my := cefingo.V8valueCreateObject(nil, nil)
-	defer cefingo.BaseRelease(my)
 
 	you := cefingo.V8valueCreateString("Wasm without Http Server")
-	defer cefingo.BaseRelease(you)
 
 	global.SetValueBykey("my", my)
 	my.SetValueBykey("you", you)
@@ -134,7 +131,6 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	cefingo.Logf("L166: %d", len(wasm))
 	v8wasm := cefingo.V8valueCreateArrayBuffer(wasm)
 	cefingo.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
-	defer cefingo.BaseRelease(v8wasm)
 
 	my.SetValueBykey("wasm", v8wasm)
 
