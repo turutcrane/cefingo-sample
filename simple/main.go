@@ -10,22 +10,22 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/turutcrane/cefingo"
+	"github.com/turutcrane/cefingo/capi"
 )
 
 var initial_url *string
 
 func init() {
-	// cefingo.Initialize(i.e. cef_initialize) and some function should be called on
+	// capi.Initialize(i.e. cef_initialize) and some function should be called on
 	// the main application thread to initialize the CEF browser process
 	runtime.LockOSThread()
 	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
-	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
-	// cefingo.RefCountLogOutput(true)
+	// capi.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
+	// capi.RefCountLogOutput(true)
 
 }
 
-var cefClient *cefingo.CClientT
+var cefClient *capi.CClientT
 
 func main() {
 	go func() {
@@ -37,31 +37,31 @@ func main() {
 	}()
 
 	life_span_handler := myLifeSpanHandler{}
-	cLifeSpanHandler := cefingo.AllocCLifeSpanHandlerT(&life_span_handler)
+	cLifeSpanHandler := capi.AllocCLifeSpanHandlerT(&life_span_handler)
 
 	browser_process_handler := myBrowserProcessHandler{}
-	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandlerT(&browser_process_handler)
+	cBrowserProcessHandler := capi.AllocCBrowserProcessHandlerT(&browser_process_handler)
 
 	client := myClient{}
-	cefClient = cefingo.AllocCClient(&client)
+	cefClient = capi.AllocCClient(&client)
 	cefClient.AssocLifeSpanHandler(cLifeSpanHandler)
 
 	app := myApp{}
-	cefApp := cefingo.AllocCAppT(&app)
+	cefApp := capi.AllocCAppT(&app)
 	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
-	cefingo.ExecuteProcess(cefApp)
+	capi.ExecuteProcess(cefApp)
 
 	initial_url = flag.String("url", "https://www.golang.org/", "URL")
 	flag.Parse()
 
-	s := cefingo.Settings{}
-	s.LogSeverity = cefingo.LogSeverityWarning
+	s := capi.Settings{}
+	s.LogSeverity = capi.LogSeverityWarning
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
-	cefingo.Initialize(s, cefApp)
+	capi.Initialize(s, cefApp)
 
-	cefingo.RunMessageLoop()
-	defer cefingo.Shutdown()
+	capi.RunMessageLoop()
+	defer capi.Shutdown()
 
 }
 
@@ -78,25 +78,25 @@ func addValueToContext(key interface{}, value interface{}) func(http.Handler) ht
 }
 
 type myLifeSpanHandler struct {
-	cefingo.DefaultLifeSpanHandler
+	capi.DefaultLifeSpanHandler
 }
 
-func (*myLifeSpanHandler) OnBeforeClose(self *cefingo.CLifeSpanHandlerT, brwoser *cefingo.CBrowserT) {
-	cefingo.QuitMessageLoop()
+func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+	capi.QuitMessageLoop()
 }
 
 type myBrowserProcessHandler struct {
-	cefingo.DefaultBrowserProcessHandler
+	capi.DefaultBrowserProcessHandler
 }
 
-func (*myBrowserProcessHandler) OnContextInitialized(sef *cefingo.CBrowserProcessHandlerT) {
-	cefingo.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
+func (*myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
+	capi.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
 }
 
 type myClient struct {
-	cefingo.DefaultClient
+	capi.DefaultClient
 }
 
 type myApp struct {
-	cefingo.DefaultApp
+	capi.DefaultApp
 }

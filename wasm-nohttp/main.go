@@ -11,23 +11,23 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/turutcrane/cefingo"
+	"github.com/turutcrane/cefingo/capi"
 	"github.com/vincent-petithory/dataurl"
 )
 
 var initial_url *string
 
 func init() {
-	// cefingo.Initialize(i.e. cef_initialize) and some function should be called on
+	// capi.Initialize(i.e. cef_initialize) and some function should be called on
 	// the main application thread to initialize the CEF browser process
 	runtime.LockOSThread()
 	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
-	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
-	// cefingo.RefCountLogOutput(true)
+	// capi.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
+	// capi.RefCountLogOutput(true)
 
 }
 
-var cefClient *cefingo.CClientT
+var cefClient *capi.CClientT
 
 func main() {
 	// defer log.Println("L31: Graceful Shutdowned")
@@ -43,24 +43,24 @@ func main() {
 	}()
 
 	life_span_handler := myLifeSpanHandler{}
-	cLifeSpanHandler := cefingo.AllocCLifeSpanHandlerT(&life_span_handler)
+	cLifeSpanHandler := capi.AllocCLifeSpanHandlerT(&life_span_handler)
 
 	browser_process_handler := myBrowserProcessHandler{}
-	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandlerT(&browser_process_handler)
+	cBrowserProcessHandler := capi.AllocCBrowserProcessHandlerT(&browser_process_handler)
 
 	client := myClient{}
-	cefClient = cefingo.AllocCClient(&client)
+	cefClient = capi.AllocCClient(&client)
 	cefClient.AssocLifeSpanHandler(cLifeSpanHandler)
 
 	app := myApp{}
-	cefApp := cefingo.AllocCAppT(&app)
+	cefApp := capi.AllocCAppT(&app)
 	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
 
 	render_process_handler := myRenderProcessHander{}
-	cRenderProcessHandler := cefingo.AllocCRenderProcessHandlerT(&render_process_handler)
+	cRenderProcessHandler := capi.AllocCRenderProcessHandlerT(&render_process_handler)
 	cefApp.AssocRenderProcessHandler(cRenderProcessHandler)
 
-	cefingo.ExecuteProcess(cefApp)
+	capi.ExecuteProcess(cefApp)
 
 	html, err := makeHtlmString()
 	if err != nil {
@@ -69,57 +69,57 @@ func main() {
 	durl := dataurl.New(html, "text/html").String()
 	initial_url = &durl
 
-	s := cefingo.Settings{}
-	s.LogSeverity = cefingo.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
+	s := capi.Settings{}
+	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
-	cefingo.Initialize(s, cefApp)
+	capi.Initialize(s, cefApp)
 
-	cefingo.RunMessageLoop()
-	defer cefingo.Shutdown()
+	capi.RunMessageLoop()
+	defer capi.Shutdown()
 
 }
 
 type myLifeSpanHandler struct {
-	cefingo.DefaultLifeSpanHandler
+	capi.DefaultLifeSpanHandler
 }
 
-func (*myLifeSpanHandler) OnBeforeClose(self *cefingo.CLifeSpanHandlerT, brwoser *cefingo.CBrowserT) {
-	cefingo.Logf("L89:")
-	cefingo.QuitMessageLoop()
+func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+	capi.Logf("L89:")
+	capi.QuitMessageLoop()
 }
 
 type myBrowserProcessHandler struct {
-	cefingo.DefaultBrowserProcessHandler
+	capi.DefaultBrowserProcessHandler
 }
 
-func (*myBrowserProcessHandler) OnContextInitialized(sef *cefingo.CBrowserProcessHandlerT) {
-	cefingo.Logf("L108:")
-	cefingo.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
+func (*myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
+	capi.Logf("L108:")
+	capi.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
 }
 
 type myClient struct {
-	cefingo.DefaultClient
+	capi.DefaultClient
 }
 
 type myApp struct {
-	cefingo.DefaultApp
+	capi.DefaultApp
 }
 
 type myRenderProcessHander struct {
-	cefingo.DefaultRenderProcessHander
+	capi.DefaultRenderProcessHander
 }
 
-func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandlerT,
-	brower *cefingo.CBrowserT,
-	frame *cefingo.CFrameT,
-	context *cefingo.CV8contextT,
+func (*myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT,
+	brower *capi.CBrowserT,
+	frame *capi.CFrameT,
+	context *capi.CV8contextT,
 ) {
 	global := context.GetGlobal()
 
-	my := cefingo.V8valueCreateObject(nil, nil)
+	my := capi.V8valueCreateObject(nil, nil)
 
-	you := cefingo.V8valueCreateString("Wasm without Http Server")
+	you := capi.V8valueCreateString("Wasm without Http Server")
 
 	global.SetValueBykey("my", my)
 	my.SetValueBykey("you", you)
@@ -128,13 +128,13 @@ func (*myRenderProcessHander) OnContextCreated(self *cefingo.CRenderProcessHandl
 	if err != nil {
 		log.Panicln("L163:", err)
 	}
-	cefingo.Logf("L166: %d", len(wasm))
-	v8wasm := cefingo.V8valueCreateArrayBuffer(wasm)
-	cefingo.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
+	capi.Logf("L166: %d", len(wasm))
+	v8wasm := capi.V8valueCreateArrayBuffer(wasm)
+	capi.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
 
 	my.SetValueBykey("wasm", v8wasm)
 
-	cefingo.Logf("L156:")
+	capi.Logf("L156:")
 }
 
 func makeHtlmString() ([]byte, error) {

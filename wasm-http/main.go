@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/turutcrane/cefingo"
+	"github.com/turutcrane/cefingo/capi"
 	"goji.io"
 	"goji.io/pat"
 )
@@ -19,16 +19,16 @@ import (
 var initial_url *string
 
 func init() {
-	// cefingo.Initialize(i.e. cef_initialize) and some function should be called on
+	// capi.Initialize(i.e. cef_initialize) and some function should be called on
 	// the main application thread to initialize the CEF browser process
 	runtime.LockOSThread()
 	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
-	// cefingo.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
-	// cefingo.RefCountLogOutput(true)
+	// capi.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
+	// capi.RefCountLogOutput(true)
 
 }
 
-var cefClient *cefingo.CClientT
+var cefClient *capi.CClientT
 
 func main() {
 	defer log.Println("L31: Graceful Shutdowned")
@@ -44,20 +44,20 @@ func main() {
 	}()
 
 	life_span_handler := myLifeSpanHandler{}
-	cLifeSpanHandler := cefingo.AllocCLifeSpanHandlerT(&life_span_handler)
+	cLifeSpanHandler := capi.AllocCLifeSpanHandlerT(&life_span_handler)
 
 	browser_process_handler := myBrowserProcessHandler{}
-	cBrowserProcessHandler := cefingo.AllocCBrowserProcessHandlerT(&browser_process_handler)
+	cBrowserProcessHandler := capi.AllocCBrowserProcessHandlerT(&browser_process_handler)
 
 	client := myClient{}
-	cefClient = cefingo.AllocCClient(&client)
+	cefClient = capi.AllocCClient(&client)
 	cefClient.AssocLifeSpanHandler(cLifeSpanHandler)
 
 	app := myApp{}
-	cefApp := cefingo.AllocCAppT(&app)
+	cefApp := capi.AllocCAppT(&app)
 	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
 
-	cefingo.ExecuteProcess(cefApp)
+	capi.ExecuteProcess(cefApp)
 
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -69,11 +69,11 @@ func main() {
 	initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
 	flag.Parse()
 
-	s := cefingo.Settings{}
-	s.LogSeverity = cefingo.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
+	s := capi.Settings{}
+	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
-	cefingo.Initialize(s, cefApp)
+	capi.Initialize(s, cefApp)
 
 	mux := goji.NewMux()
 	mux.Handle(pat.Get("/html/*"), http.StripPrefix("/html", http.FileServer(http.Dir("./html"))))
@@ -87,35 +87,35 @@ func main() {
 		}
 	}()
 
-	cefingo.RunMessageLoop()
-	defer cefingo.Shutdown()
+	capi.RunMessageLoop()
+	defer capi.Shutdown()
 
 	ctx := context.Background()
 	srv.Shutdown(ctx)
 }
 
 type myLifeSpanHandler struct {
-	cefingo.DefaultLifeSpanHandler
+	capi.DefaultLifeSpanHandler
 }
 
-func (*myLifeSpanHandler) OnBeforeClose(self *cefingo.CLifeSpanHandlerT, brwoser *cefingo.CBrowserT) {
-	cefingo.Logf("L89:")
-	cefingo.QuitMessageLoop()
+func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+	capi.Logf("L89:")
+	capi.QuitMessageLoop()
 }
 
 type myBrowserProcessHandler struct {
-	cefingo.DefaultBrowserProcessHandler
+	capi.DefaultBrowserProcessHandler
 }
 
-func (*myBrowserProcessHandler) OnContextInitialized(sef *cefingo.CBrowserProcessHandlerT) {
-	cefingo.Logf("L108:")
-	cefingo.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
+func (*myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
+	capi.Logf("L108:")
+	capi.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
 }
 
 type myClient struct {
-	cefingo.DefaultClient
+	capi.DefaultClient
 }
 
 type myApp struct {
-	cefingo.DefaultApp
+	capi.DefaultApp
 }
