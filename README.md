@@ -22,7 +22,7 @@ Open golang.org.
     ```
 ## Sample 2
 
-Wasm sample with http server
+Wasm sample with http server (require go 1.12 or later)
 
 1. Cange Directory
     ```bat
@@ -41,7 +41,7 @@ Wasm sample with http server
 
 ## Sample 3
 
-Wasm sample without http server
+Wasm sample without http server (require go 1.12 or later)
 
 1. Cange Directory
     ```bat
