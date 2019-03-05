@@ -76,6 +76,9 @@ func main() {
 	capi.Initialize(s, cefApp)
 
 	mux := goji.NewMux()
+	mux.HandleFunc(pat.Get("/html/wasm_exec.js"), func (w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
+	})
 	mux.Handle(pat.Get("/html/*"), http.StripPrefix("/html", http.FileServer(http.Dir("./html"))))
 	mux.Handle(pat.Get("/wasm/*"), http.StripPrefix("/wasm", http.FileServer(http.Dir("./wasm"))))
 
