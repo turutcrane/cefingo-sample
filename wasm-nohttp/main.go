@@ -138,7 +138,7 @@ func (*myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT
 }
 
 func makeHtlmString() ([]byte, error) {
-	wasmjs, err := ioutil.ReadFile("html/wasm_exec.js")
+	wasmjs, err := ioutil.ReadFile(runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
 	if err != nil {
 		return nil, err
 	}
