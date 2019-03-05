@@ -41,7 +41,7 @@ Wasm sample with http server (require go 1.12 or later)
 
 ## Sample 3
 
-Wasm sample without http server (require go 1.12 or later)
+Wasm sample without http server
 
 1. Cange Directory
     ```bat
