@@ -27,8 +27,6 @@ func init() {
 
 }
 
-var cefClient *capi.CClientT
-
 func main() {
 	// defer log.Println("L31: Graceful Shutdowned")
 	// log.Println("L33: started:", "Pid:", os.Getpid(), "PPid:", os.Getppid(), os.Args)
@@ -43,24 +41,25 @@ func main() {
 	}()
 
 	life_span_handler := myLifeSpanHandler{}
-	cLifeSpanHandler := capi.AllocCLifeSpanHandlerT(&life_span_handler)
+	capi.AllocCLifeSpanHandlerT().Bind(&life_span_handler)
 
 	browser_process_handler := myBrowserProcessHandler{}
-	cBrowserProcessHandler := capi.AllocCBrowserProcessHandlerT(&browser_process_handler)
+	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
 
 	client := myClient{}
-	cefClient = capi.AllocCClient(&client)
-	cefClient.AssocLifeSpanHandler(cLifeSpanHandler)
+	capi.AllocCClient().Bind(&client)
+	client.GetCClientT().AssocLifeSpanHandler(life_span_handler.GetCLifeSpanHandlerT())
+	browser_process_handler.SetCClientT(client.GetCClientT())
 
 	app := myApp{}
-	cefApp := capi.AllocCAppT(&app)
-	cefApp.AssocBrowserProcessHandler(cBrowserProcessHandler)
+	capi.AllocCAppT().Bind(&app)
+	app.GetCAppT().AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
 
 	render_process_handler := myRenderProcessHander{}
-	cRenderProcessHandler := capi.AllocCRenderProcessHandlerT(&render_process_handler)
-	cefApp.AssocRenderProcessHandler(cRenderProcessHandler)
+	capi.AllocCRenderProcessHandlerT().Bind(&render_process_handler)
+	app.GetCAppT().AssocRenderProcessHandler(render_process_handler.GetCRenderProcessHandlerT())
 
-	capi.ExecuteProcess(cefApp)
+	capi.ExecuteProcess(app.GetCAppT())
 
 	html, err := makeHtlmString()
 	if err != nil {
@@ -73,7 +72,7 @@ func main() {
 	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
-	capi.Initialize(s, cefApp)
+	capi.Initialize(s, app.GetCAppT())
 
 	capi.RunMessageLoop()
 	defer capi.Shutdown()
@@ -81,7 +80,7 @@ func main() {
 }
 
 type myLifeSpanHandler struct {
-	capi.DefaultLifeSpanHandler
+	capi.RefToCLifeSpanHandlerT
 }
 
 func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
@@ -90,24 +89,29 @@ func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *c
 }
 
 type myBrowserProcessHandler struct {
-	capi.DefaultBrowserProcessHandler
+	capi.RefToCBrowserProcessHandlerT
+	capi.RefToCClientT
 }
 
-func (*myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
+func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.Logf("L108:")
-	capi.BrowserHostCreateBrowser("Cefingo Example", *initial_url, cefClient)
+	capi.BrowserHostCreateBrowser(
+		"Cefingo Example",
+		*initial_url,
+		bph.GetCClientT(),
+	)
 }
 
 type myClient struct {
-	capi.DefaultClient
+	capi.RefToCClientT
 }
 
 type myApp struct {
-	capi.DefaultApp
+	capi.RefToCAppT
 }
 
 type myRenderProcessHander struct {
-	capi.DefaultRenderProcessHander
+	capi.RefToCRenderProcessHandlerT
 }
 
 func (*myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT,
