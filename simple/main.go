@@ -13,8 +13,6 @@ import (
 	"github.com/turutcrane/cefingo/capi"
 )
 
-var initial_url *string
-
 func init() {
 	// capi.Initialize(i.e. cef_initialize) and some function should be called on
 	// the main application thread to initialize the CEF browser process
@@ -34,31 +32,29 @@ func main() {
 		os.Exit(0)
 	}()
 
-	life_span_handler := myLifeSpanHandler{}
-	capi.AllocCLifeSpanHandlerT().Bind(&life_span_handler)
+	life_span_handler := capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
 
 	browser_process_handler := myBrowserProcessHandler{}
 	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
+	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
 
-	client := myClient{}
-	capi.AllocCClient().Bind(&client)
-	client.GetCClientT().AssocLifeSpanHandler(life_span_handler.GetCLifeSpanHandlerT())
+	client := capi.AllocCClient().Bind(&myClient{})
+	client.AssocLifeSpanHandler(life_span_handler)
 
-	browser_process_handler.SetCClientT(client.GetCClientT())
+	browser_process_handler.SetCClientT(client)
 
-	app := myApp{}
-	capi.AllocCAppT().Bind(&app)
-	app.GetCAppT().AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
-	capi.ExecuteProcess(app.GetCAppT())
+	app := capi.AllocCAppT().Bind(&myApp{})
+	app.AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
+	capi.ExecuteProcess(app)
 
-	initial_url = flag.String("url", "https://www.golang.org/", "URL")
+	browser_process_handler.initial_url = flag.String("url", "https://www.golang.org/", "URL")
 	flag.Parse()
 
 	s := capi.Settings{}
 	s.LogSeverity = capi.LogSeverityWarning
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
-	capi.Initialize(s, app.GetCAppT())
+	capi.Initialize(s, app)
 
 	capi.RunMessageLoop()
 	defer capi.Shutdown()
@@ -78,29 +74,30 @@ func addValueToContext(key interface{}, value interface{}) func(http.Handler) ht
 }
 
 type myLifeSpanHandler struct {
-	capi.RefToCLifeSpanHandlerT
 }
 
-func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
 	capi.QuitMessageLoop()
 }
 
 type myBrowserProcessHandler struct {
+	// this reference forms an UNgabagecollectable circular reference
+	// To GC, call myBrowserProcessHandler.SetCBrowserProcessHandlerT(nil)
 	capi.RefToCBrowserProcessHandlerT
+
 	capi.RefToCClientT
+	initial_url *string
 }
 
-func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
+func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.BrowserHostCreateBrowser(
 		"Cefingo Example",
-		*initial_url,
+		*bph.initial_url,
 		bph.GetCClientT())
 }
 
 type myClient struct {
-	capi.RefToCClientT
 }
 
 type myApp struct {
-	capi.RefToCAppT
 }

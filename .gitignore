@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.wasm
 
 # Test binary, build with `go test -c`
 *.test
@@ -12,4 +13,4 @@
 *.out
 
 GPUCache
-
+VideoDecodeStats
