@@ -89,7 +89,7 @@ https://github.com/microsoft/monaco-editor/blob/master/docs/integrate-amd.md) sa
 
 1. Build statik package.
     ```bat
-    C:> static -src package/min/
+    C:> statik -src package/min/
     ```
 
 1. Run sample program.
