@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/turutcrane/cefingo/v8"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/turutcrane/cefingo/v8"
 
 	e "github.com/julvo/htmlgo"
 	a "github.com/julvo/htmlgo/attributes"
@@ -122,7 +123,7 @@ var main_text = e.Html5(e.Attr(a.Lang("ja")),
 			a.Id_("container"),
 			a.Style_("width:800px;height:400px;border:1px solid grey"),
 		)),
-		e.Script(e.Attr(a.Src_("/monaco-editor/loader.js")), e.JavaScript_("")),
+		e.Script(e.Attr(a.Src_("/vs/loader.js")), e.JavaScript_("")),
 	),
 )
 
@@ -155,28 +156,6 @@ func (factory *mySchemeHandlerFactory) Create(
 				mime:  "text/html",
 				bytes: []byte(main_text),
 			})
-		} else if strings.HasPrefix(url.Path, "/monaco-editor/") {
-			if err != nil {
-				capi.Panicf("T151: %v", err)
-			}
-			capi.Logf("T146: %s", url.Path)
-			fn := strings.Replace(url.Path, "/monaco-editor/", "/vs/", 1)
-
-			f, err := statikFs.Open(fn)
-			if err != nil {
-				capi.Panicf("T163: %s, %v", fn, err)
-			}
-			content, err := ioutil.ReadAll(f)
-			if err != nil {
-				capi.Panicf("T155: %s, %v", fn, err)
-			}
-
-			handler = capi.AllocCResourceHanderT().Bind(&myResourceHandler{
-				url:   url,
-				mime:  ftMime(fn),
-				bytes: content,
-			})
-
 		} else if strings.HasPrefix(url.Path, "/vs/") {
 			f, err := statikFs.Open(url.Path)
 			if err != nil {
@@ -355,9 +334,9 @@ func (*myLoadHandler) OnLoadEnd(
 			return
 		}
 
-		// require.config({ paths: { 'vs': '/monaco-editor'} });
+		// require.config({ paths: { 'vs': '/vs'} });
 		vs := v8.NewObject()
-		vs.SetValueBykey("vs", v8.NewString("http://"+internalHostname+"/monaco-editor"))
+		vs.SetValueBykey("vs", v8.NewString("/vs"))
 		o := v8.NewObject()
 		o.SetValueBykey("paths", vs)
 		_, err = require.Call("config", []v8.Value{o})
