@@ -73,6 +73,7 @@ type myBrowserProcessHandler struct {
 }
 
 const internalHostname = "cefingo.internal"
+
 func init() {
 	var _ capi.OnContextInitializedHandler = &myBrowserProcessHandler{}
 }
@@ -214,6 +215,7 @@ type myResourceHandler struct {
 	next   int
 	mime   string
 }
+
 func init() {
 	var _ capi.ProcessRequestHandler = &myResourceHandler{}
 	var _ capi.GetResponseHeadersHandler = &myResourceHandler{}
@@ -278,6 +280,7 @@ type notFoundHandler struct {
 	url  *url.URL
 	text string
 }
+
 func init() {
 	var _ capi.GetResponseHeadersHandler = &notFoundHandler{}
 	var _ capi.ReadResponseHandler = &notFoundHandler{}

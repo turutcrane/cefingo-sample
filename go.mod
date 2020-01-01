@@ -8,4 +8,5 @@ require (
 	github.com/rakyll/statik v0.1.6
 	github.com/turutcrane/cefingo v0.1.6
 	github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb
+	goji.io v2.0.2+incompatible // indirect
 )

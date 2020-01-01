@@ -104,6 +104,7 @@ func main() {
 
 type myLifeSpanHandler struct {
 }
+
 func init() {
 	var _ capi.OnBeforeCloseHandler = myLifeSpanHandler{}
 }
@@ -120,6 +121,7 @@ type myBrowserProcessHandler struct {
 
 	initial_url string
 }
+
 func init() {
 	var _ capi.OnContextInitializedHandler = myBrowserProcessHandler{}
 }
@@ -182,6 +184,7 @@ type mySchemeHandlerFactory struct {
 }
 
 const internalHostName = "capi.internal"
+
 func init() {
 	var _ capi.CreateHandler = mySchemeHandlerFactory{}
 }

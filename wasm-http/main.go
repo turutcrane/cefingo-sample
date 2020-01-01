@@ -103,7 +103,7 @@ func (myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *ca
 	capi.QuitMessageLoop()
 }
 
-func init () {
+func init() {
 	var _ capi.OnContextInitializedHandler = myBrowserProcessHandler{}
 }
 
