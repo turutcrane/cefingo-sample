@@ -1,5 +1,7 @@
 package main
 
+//go:generate statik -src package/min -f
+
 import (
 	// "fmt"
 	"io/ioutil"
