@@ -38,20 +38,20 @@ func main() {
 	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
 	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
 
-	client := capi.AllocCClient().Bind(&myClient{})
-	client.AssocLifeSpanHandler(life_span_handler)
+	client := capi.AllocCClientT().Bind(&myClient{})
+	client.AssocLifeSpanHandlerT(life_span_handler)
 
 	browser_process_handler.SetCClientT(client)
 
 	app := capi.AllocCAppT().Bind(&myApp{})
-	app.AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
+	app.AssocBrowserProcessHandlerT(browser_process_handler.GetCBrowserProcessHandlerT())
 	capi.ExecuteProcess(app)
 
 	browser_process_handler.initial_url = flag.String("url", "https://www.golang.org/", "URL")
 	flag.Parse()
 
 	s := capi.Settings{}
-	s.LogSeverity = capi.LogSeverityWarning
+	s.LogSeverity = capi.LogseverityWarning
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
 	capi.Initialize(s, app)

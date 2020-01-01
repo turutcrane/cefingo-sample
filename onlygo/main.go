@@ -11,7 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/turutcrane/cefingo/capi"
-	"github.com/turutcrane/cefingo/v8"
+	"github.com/turutcrane/cefingo/cef"
+	"github.com/turutcrane/cefingo/v8api"
 )
 
 const index_text = `
@@ -72,15 +73,15 @@ func main() {
 	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
 
 	app := capi.AllocCAppT().Bind(&myApp{})
-	app.AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
+	app.AssocBrowserProcessHandlerT(browser_process_handler.GetCBrowserProcessHandlerT())
 
 	render_process_handler :=
 		capi.AllocCRenderProcessHandlerT().Bind(&myRenderProcessHander{})
-	app.AssocRenderProcessHandler(render_process_handler)
+	app.AssocRenderProcessHandlerT(render_process_handler)
 
 	load_handler :=
 		capi.AllocCLoadHandlerT().Bind(&myLoadHandler{})
-	render_process_handler.AssocLoadHandler(load_handler)
+	render_process_handler.AssocLoadHandlerT(load_handler)
 
 	capi.ExecuteProcess(app)
 
@@ -90,7 +91,7 @@ func main() {
 	browser_process_handler.initial_url = *initial_url
 
 	s := capi.Settings{}
-	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
+	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
 	// s.RemoteDebuggingPort = 8088
@@ -102,6 +103,9 @@ func main() {
 }
 
 type myLifeSpanHandler struct {
+}
+func init() {
+	var _ capi.OnBeforeCloseHandler = myLifeSpanHandler{}
 }
 
 func (myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
@@ -116,6 +120,9 @@ type myBrowserProcessHandler struct {
 
 	initial_url string
 }
+func init() {
+	var _ capi.OnContextInitializedHandler = myBrowserProcessHandler{}
+}
 
 func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.Logf("L108:")
@@ -128,8 +135,8 @@ func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProces
 
 	life_span_handler := capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
 
-	client := capi.AllocCClient().Bind(&myClient{})
-	client.AssocLifeSpanHandler(life_span_handler)
+	client := capi.AllocCClientT().Bind(&myClient{})
+	client.AssocLifeSpanHandlerT(life_span_handler)
 
 	capi.BrowserHostCreateBrowser(
 		"Cefingo Example",
@@ -147,6 +154,10 @@ type myApp struct {
 type myRenderProcessHander struct {
 }
 
+func init() {
+	var _ capi.OnContextCreatedHandler = myRenderProcessHander{}
+}
+
 func (myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT,
 	brower *capi.CBrowserT,
 	frame *capi.CFrameT,
@@ -158,8 +169,12 @@ func (myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT,
 
 	msg := capi.V8valueCreateString("Cefingo Hello")
 
-	global.SetValueBykey("my", my)
-	my.SetValueBykey("msg", msg)
+	if ok := global.SetValueBykey("my", my, capi.V8PropertyAttributeNone); !ok {
+		capi.Logf("T163: can not set my")
+	}
+	if ok := my.SetValueBykey("msg", msg, capi.V8PropertyAttributeNone); !ok {
+		capi.Logf("T163: can not set msg")
+	}
 
 }
 
@@ -167,6 +182,9 @@ type mySchemeHandlerFactory struct {
 }
 
 const internalHostName = "capi.internal"
+func init() {
+	var _ capi.CreateHandler = mySchemeHandlerFactory{}
+}
 
 func (factory mySchemeHandlerFactory) Create(
 	self *capi.CSchemeHandlerFactoryT,
@@ -193,7 +211,7 @@ func (factory mySchemeHandlerFactory) Create(
 			rh.mime = "text/css"
 			rh.text = css_text
 		}
-		handler = capi.AllocCResourceHanderT().Bind(&rh)
+		handler = capi.AllocCResourceHandlerT().Bind(&rh)
 	}
 	return handler
 }
@@ -202,6 +220,12 @@ type myResourceHandler struct {
 	capi.RefToCRequestT
 	text string
 	mime string
+}
+
+func init() {
+	var _ capi.ProcessRequestHandler = myResourceHandler{}
+	var _ capi.GetResponseHeadersHandler = myResourceHandler{}
+	var _ capi.ReadResponseHandler = myResourceHandler{}
 }
 
 func (rh myResourceHandler) ProcessRequest(
@@ -227,12 +251,15 @@ func (rh myResourceHandler) GetResponseHeaders(
 	}
 	capi.Logf("L391: %s", u.Path)
 	response.SetMimeType(rh.mime)
-	h := []capi.StringMap{
-		{Key: "Content-Type", Value: rh.mime + "; charset=utf-8"},
-	}
+	// h := []capi.StringMap{
+	// 	{Key: "Content-Type", Value: rh.mime + "; charset=utf-8"},
+	// }
 	response.SetStatus(200)
 	// response.SetStatusText("OK")
-	response.SetHeaderMap(h)
+	h := cef.NewStringMultimap()
+	capi.StringMultimapAppend(h.CefObject(), "Content-Type", rh.mime+"; charset=utf-8")
+	response.SetHeaderMap(h.CefObject())
+	// response.SetHeaderMap(h)
 
 	*response_length = int64(len(rh.text))
 }
@@ -240,13 +267,12 @@ func (rh myResourceHandler) GetResponseHeaders(
 func (rh myResourceHandler) ReadResponse(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	bytes_to_read int,
 	bytes_read *int,
 	callback *capi.CCallbackT,
 ) bool {
 	l := len(rh.text)
 	buf := []byte(rh.text)
-	l = min(l, len(buf))
+	l = min(l, len(data_out))
 	for i, b := range buf[:l] {
 		data_out[i] = b
 	}
@@ -263,6 +289,10 @@ func min(x, y int) int {
 }
 
 type myLoadHandler struct {
+}
+
+func init() {
+	var _ capi.OnLoadEndHandler = myLoadHandler{}
 }
 
 func (myLoadHandler) OnLoadEnd(

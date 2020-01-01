@@ -44,15 +44,15 @@ func main() {
 	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
 	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
 
-	client := capi.AllocCClient().Bind(&myClient{})
-	client.AssocLifeSpanHandler(life_span_handler)
+	client := capi.AllocCClientT().Bind(&myClient{})
+	client.AssocLifeSpanHandlerT(life_span_handler)
 	browser_process_handler.SetCClientT(client)
 
 	app := capi.AllocCAppT().Bind(&myApp{})
-	app.AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
+	app.AssocBrowserProcessHandlerT(browser_process_handler.GetCBrowserProcessHandlerT())
 
 	render_process_handler := capi.AllocCRenderProcessHandlerT().Bind(&myRenderProcessHander{})
-	app.AssocRenderProcessHandler(render_process_handler)
+	app.AssocRenderProcessHandlerT(render_process_handler)
 
 	capi.ExecuteProcess(app)
 
@@ -64,7 +64,7 @@ func main() {
 	browser_process_handler.initial_url = durl
 
 	s := capi.Settings{}
-	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
+	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
 	capi.Initialize(s, app)
@@ -120,18 +120,24 @@ func (myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT,
 
 	you := capi.V8valueCreateString("Wasm without Http Server")
 
-	global.SetValueBykey("my", my)
-	my.SetValueBykey("you", you)
+	if ok := global.SetValueBykey("my", my, capi.V8PropertyAttributeNone); !ok {
+		capi.Logf("T124: can not set my")
+	}
+	if ok := my.SetValueBykey("you", you, capi.V8PropertyAttributeNone); !ok {
+		capi.Logf("T127: can not set you")
+	}
 
 	wasm, err := ioutil.ReadFile("wasm/test.wasm") // just pass the file name
 	if err != nil {
 		log.Panicln("L163:", err)
 	}
 	capi.Logf("L166: %d", len(wasm))
-	v8wasm := capi.V8valueCreateArrayBuffer(wasm)
+	v8wasm := capi.CreateArrayBuffer(wasm)
 	capi.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
 
-	my.SetValueBykey("wasm", v8wasm)
+	if ok := my.SetValueBykey("wasm", v8wasm, capi.V8PropertyAttributeNone); !ok {
+		capi.Logf("T139: can not set you")
+	}
 
 	capi.Logf("L156:")
 }

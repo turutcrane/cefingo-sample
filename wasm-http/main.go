@@ -45,12 +45,12 @@ func main() {
 	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
 	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
 
-	client := capi.AllocCClient().Bind(&myClient{})
-	client.AssocLifeSpanHandler(life_span_handler)
+	client := capi.AllocCClientT().Bind(&myClient{})
+	client.AssocLifeSpanHandlerT(life_span_handler)
 	browser_process_handler.SetCClientT(client)
 
 	app := capi.AllocCAppT().Bind(&myApp{})
-	app.AssocBrowserProcessHandler(browser_process_handler.GetCBrowserProcessHandlerT())
+	app.AssocBrowserProcessHandlerT(browser_process_handler.GetCBrowserProcessHandlerT())
 
 	capi.ExecuteProcess(app)
 
@@ -65,7 +65,7 @@ func main() {
 	flag.Parse()
 
 	s := capi.Settings{}
-	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
+	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
 	capi.Initialize(s, app)
@@ -91,6 +91,9 @@ func main() {
 	ctx := context.Background()
 	srv.Shutdown(ctx)
 }
+func init() {
+	var _ capi.OnBeforeCloseHandler = myLifeSpanHandler{}
+}
 
 type myLifeSpanHandler struct {
 }
@@ -98,6 +101,10 @@ type myLifeSpanHandler struct {
 func (myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
 	capi.Logf("L89:")
 	capi.QuitMessageLoop()
+}
+
+func init () {
+	var _ capi.OnContextInitializedHandler = myBrowserProcessHandler{}
 }
 
 type myBrowserProcessHandler struct {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	// "fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turutcrane/cefingo/v8"
-
 	e "github.com/julvo/htmlgo"
 	a "github.com/julvo/htmlgo/attributes"
 	"github.com/turutcrane/cefingo/capi"
+	"github.com/turutcrane/cefingo/cef"
+	"github.com/turutcrane/cefingo/v8api"
 
 	"github.com/rakyll/statik/fs"
 	_ "github.com/turutcrane/cefingo-sample/monaco-editor/statik"
@@ -47,17 +48,17 @@ func main() {
 	app := capi.AllocCAppT()
 
 	bph := capi.AllocCBrowserProcessHandlerT().Bind(&myBrowserProcessHandler{})
-	app.AssocBrowserProcessHandler(bph)
+	app.AssocBrowserProcessHandlerT(bph)
 
 	rph := capi.AllocCRenderProcessHandlerT().Bind(&myRenderProcessHandler{})
 	lh := capi.AllocCLoadHandlerT().Bind(&myLoadHandler{})
-	rph.AssocLoadHandler(lh)
-	app.AssocRenderProcessHandler(rph)
+	rph.AssocLoadHandlerT(lh)
+	app.AssocRenderProcessHandlerT(rph)
 
 	capi.ExecuteProcess(app) // Exit if this is render process
 
 	s := capi.Settings{}
-	s.LogSeverity = capi.LogSeverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
+	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
 	s.NoSandbox = 0
 	s.MultiThreadedMessageLoop = 0
 	s.RemoteDebuggingPort = 8088 // enabled if 1024-65535
@@ -72,6 +73,9 @@ type myBrowserProcessHandler struct {
 }
 
 const internalHostname = "cefingo.internal"
+func init() {
+	var _ capi.OnContextInitializedHandler = &myBrowserProcessHandler{}
+}
 
 func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.Logf("T41:")
@@ -81,10 +85,10 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	factory := capi.AllocCSchemeHandlerFactoryT().Bind(&mySchemeHandlerFactory{})
 	capi.RegisterSchemeHandlerFactory("http", internalHostname, factory)
 
-	client := capi.AllocCClient().Bind(&myClient{})
+	client := capi.AllocCClientT().Bind(&myClient{})
 	life_span_handler :=
 		capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
-	client.AssocLifeSpanHandler(life_span_handler)
+	client.AssocLifeSpanHandlerT(life_span_handler)
 
 	capi.BrowserHostCreateBrowser("Cefingo Example", "http://"+internalHostname+"/main", client)
 }
@@ -93,6 +97,11 @@ type myClient struct {
 }
 
 type myLifeSpanHandler struct {
+}
+
+func init() {
+	var _ capi.OnAfterCreatedHandler = &myLifeSpanHandler{}
+	var _ capi.OnBeforeCloseHandler = &myLifeSpanHandler{}
 }
 
 func (*myLifeSpanHandler) OnAfterCreated(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
@@ -137,6 +146,10 @@ func init() {
 	}
 }
 
+func init() {
+	var _ capi.CreateHandler = &mySchemeHandlerFactory{}
+}
+
 func (factory *mySchemeHandlerFactory) Create(
 	self *capi.CSchemeHandlerFactoryT,
 	browser *capi.CBrowserT,
@@ -151,7 +164,7 @@ func (factory *mySchemeHandlerFactory) Create(
 	}
 	if url.Hostname() == internalHostname {
 		if url.Path == "/main" {
-			handler = capi.AllocCResourceHanderT().Bind(&myResourceHandler{
+			handler = capi.AllocCResourceHandlerT().Bind(&myResourceHandler{
 				url:   url,
 				mime:  "text/html",
 				bytes: []byte(main_text),
@@ -165,14 +178,15 @@ func (factory *mySchemeHandlerFactory) Create(
 			if err != nil {
 				capi.Panicf("T155: %s, %v", url.Path, err)
 			}
-			handler = capi.AllocCResourceHanderT().Bind(&myResourceHandler{
+			capi.Logf("T181: %s", url.Path)
+			handler = capi.AllocCResourceHandlerT().Bind(&myResourceHandler{
 				url:   url,
 				mime:  ftMime(url.Path),
 				bytes: content,
 			})
 		} else {
 			capi.Logf("T132: Not Found: %s, %s", url.Hostname(), url.Path)
-			handler = capi.AllocCResourceHanderT().Bind(&notFoundHandler{
+			handler = capi.AllocCResourceHandlerT().Bind(&notFoundHandler{
 				url: url,
 			})
 		}
@@ -200,6 +214,11 @@ type myResourceHandler struct {
 	next   int
 	mime   string
 }
+func init() {
+	var _ capi.ProcessRequestHandler = &myResourceHandler{}
+	var _ capi.GetResponseHeadersHandler = &myResourceHandler{}
+	var _ capi.ReadResponseHandler = &myResourceHandler{}
+}
 
 func (rh *myResourceHandler) ProcessRequest(
 	self *capi.CResourceHandlerT,
@@ -219,9 +238,9 @@ func (rh *myResourceHandler) GetResponseHeaders(
 ) {
 	capi.Logf("T391: %s: %d", rh.url.Path, rh.status)
 	response.SetMimeType(rh.mime)
-	h := []capi.StringMap{
-		{Key: "Content-Type", Value: rh.mime + "; charset=utf-8"},
-	}
+	// h := []capi.StringMap{
+	// 	{Key: "Content-Type", Value: rh.mime + "; charset=utf-8"},
+	// }
 	status := rh.status
 	text := ""
 	if status == 0 {
@@ -230,7 +249,10 @@ func (rh *myResourceHandler) GetResponseHeaders(
 	}
 	response.SetStatus(status)
 	response.SetStatusText(text)
-	response.SetHeaderMap(h)
+	// response.SetHeaderMap(h)
+	h := cef.NewStringMultimap()
+	capi.StringMultimapAppend(h.CefObject(), "Content-Type", rh.mime+"; charset=utf-8")
+	response.SetHeaderMap(h.CefObject())
 
 	*response_length = int64(len(rh.bytes))
 	// response.DumpHeaders()
@@ -239,12 +261,11 @@ func (rh *myResourceHandler) GetResponseHeaders(
 func (rh *myResourceHandler) ReadResponse(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	bytes_to_read int,
 	bytes_read *int,
 	callback *capi.CCallbackT,
 ) bool {
-	l := min(bytes_to_read, len(rh.bytes)-rh.next)
-	capi.Logf("T214: %s %d: %d, %d", rh.url, bytes_to_read, len(rh.bytes), l)
+	l := min(len(data_out), len(rh.bytes)-rh.next)
+	capi.Logf("T214: %s %d: %d, %d", rh.url, len(data_out), len(rh.bytes), l)
 	for i := 0; i < l; i++ {
 		data_out[i] = rh.bytes[rh.next+i]
 	}
@@ -257,7 +278,10 @@ type notFoundHandler struct {
 	url  *url.URL
 	text string
 }
-
+func init() {
+	var _ capi.GetResponseHeadersHandler = &notFoundHandler{}
+	var _ capi.ReadResponseHandler = &notFoundHandler{}
+}
 func (nfh *notFoundHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
 	response *capi.CResponseT,
@@ -266,12 +290,16 @@ func (nfh *notFoundHandler) GetResponseHeaders(
 ) {
 	mime := "text/plain"
 	response.SetMimeType(mime)
-	h := []capi.StringMap{
-		{Key: "Content-Type", Value: mime + "; charset=utf-8"},
-	}
+	// h := []capi.StringMap{
+	// 	{Key: "Content-Type", Value: mime + "; charset=utf-8"},
+	// }
 	response.SetStatus(404)
 	response.SetStatusText("Not Found")
-	response.SetHeaderMap(h)
+	// response.SetHeaderMap(h)
+	h := cef.NewStringMultimap()
+	capi.StringMultimapAppend(h.CefObject(), "Content-Type", mime+"; charset=utf-8")
+	response.SetHeaderMap(h.CefObject())
+
 	nfh.text = nfh.url.Path + " Not Found."
 	*response_length = int64(len(nfh.text))
 	// response.DumpHeaders()
@@ -280,13 +308,12 @@ func (nfh *notFoundHandler) GetResponseHeaders(
 func (nfh *notFoundHandler) ReadResponse(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	bytes_to_read int,
 	bytes_read *int,
 	callback *capi.CCallbackT,
 ) bool {
 	l := len(nfh.text)
 	buf := []byte(nfh.text)
-	l = min(l, len(buf))
+	l = min(l, len(data_out))
 	for i, b := range buf[:l] {
 		data_out[i] = b
 	}
@@ -306,6 +333,10 @@ type myRenderProcessHandler struct {
 }
 
 type myLoadHandler struct {
+}
+
+func init() {
+	var _ capi.OnLoadEndHandler = &myLoadHandler{}
 }
 
 func (*myLoadHandler) OnLoadEnd(
@@ -339,6 +370,10 @@ func (*myLoadHandler) OnLoadEnd(
 		vs.SetValueBykey("vs", v8.NewString("/vs"))
 		o := v8.NewObject()
 		o.SetValueBykey("paths", vs)
+
+		if _, err := require.GetValueBykey("config"); err != nil {
+			capi.Panicf("T352: can not get config")
+		}
 		_, err = require.Call("config", []v8.Value{o})
 		if err != nil {
 			capi.Panicf("E306: %+v", err)
