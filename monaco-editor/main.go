@@ -221,7 +221,7 @@ type myResourceHandler struct {
 func init() {
 	var _ capi.ProcessRequestHandler = &myResourceHandler{}
 	var _ capi.GetResponseHeadersHandler = &myResourceHandler{}
-	var _ capi.ReadResponseHandler = &myResourceHandler{}
+	var _ capi.ReadHandler = &myResourceHandler{}
 }
 
 func (rh *myResourceHandler) ProcessRequest(
@@ -262,11 +262,11 @@ func (rh *myResourceHandler) GetResponseHeaders(
 	// response.DumpHeaders()
 }
 
-func (rh *myResourceHandler) ReadResponse(
+func (rh *myResourceHandler) Read(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
 	bytes_read *int,
-	callback *capi.CCallbackT,
+	callback *capi.CResourceReadCallbackT,
 ) bool {
 	l := min(len(data_out), len(rh.bytes)-rh.next)
 	capi.Logf("T214: %s %d: %d, %d", rh.url, len(data_out), len(rh.bytes), l)
@@ -275,7 +275,11 @@ func (rh *myResourceHandler) ReadResponse(
 	}
 	rh.next = rh.next + l
 	*bytes_read = l
-	return true
+	ret := true
+	if l <= 0 {
+		ret = false
+	}
+	return ret
 }
 
 type notFoundHandler struct {

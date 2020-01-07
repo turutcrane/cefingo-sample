@@ -209,10 +209,10 @@ func (factory mySchemeHandlerFactory) Create(
 		switch url.Path {
 		case "/":
 			rh.mime = "text/html"
-			rh.text = index_text
+			rh.text = []byte(index_text)
 		case "/css/mystyle.css":
 			rh.mime = "text/css"
-			rh.text = css_text
+			rh.text = []byte(css_text)
 		}
 		handler = capi.AllocCResourceHandlerT().Bind(&rh)
 	}
@@ -221,17 +221,18 @@ func (factory mySchemeHandlerFactory) Create(
 
 type myResourceHandler struct {
 	capi.RefToCRequestT
-	text string
+	text []byte
 	mime string
+	next int
 }
 
 func init() {
-	var _ capi.ProcessRequestHandler = myResourceHandler{}
-	var _ capi.GetResponseHeadersHandler = myResourceHandler{}
-	var _ capi.ReadResponseHandler = myResourceHandler{}
+	var _ capi.ProcessRequestHandler = &myResourceHandler{}
+	var _ capi.GetResponseHeadersHandler = &myResourceHandler{}
+	var _ capi.ReadHandler = &myResourceHandler{}
 }
 
-func (rh myResourceHandler) ProcessRequest(
+func (rh *myResourceHandler) ProcessRequest(
 	self *capi.CResourceHandlerT,
 	request *capi.CRequestT,
 	callback *capi.CCallbackT,
@@ -242,7 +243,7 @@ func (rh myResourceHandler) ProcessRequest(
 	return true
 }
 
-func (rh myResourceHandler) GetResponseHeaders(
+func (rh *myResourceHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
 	response *capi.CResponseT,
 	response_length *int64,
@@ -267,21 +268,25 @@ func (rh myResourceHandler) GetResponseHeaders(
 	*response_length = int64(len(rh.text))
 }
 
-func (rh myResourceHandler) ReadResponse(
+// ReadResponse method is deprecated from cef 75
+func (rh *myResourceHandler) Read(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
 	bytes_read *int,
-	callback *capi.CCallbackT,
+	callback *capi.CResourceReadCallbackT,
 ) bool {
-	l := len(rh.text)
-	buf := []byte(rh.text)
-	l = min(l, len(data_out))
-	for i, b := range buf[:l] {
-		data_out[i] = b
+	l := min(len(data_out), len(rh.text) - rh.next)
+	for i := 0; i < l; i++ {
+		data_out[i] = rh.text[rh.next+i]
 	}
 	*bytes_read = l
-	capi.Logf("L409: %d, %d", len(rh.text), l)
-	return true
+	rh.next = rh.next + l
+	capi.Logf("L409: %d, %d, %d", len(rh.text), l, rh.next)
+	ret := true
+	if l <= 0 {
+		ret = false
+	}
+	return ret
 }
 
 func min(x, y int) int {
