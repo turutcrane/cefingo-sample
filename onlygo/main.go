@@ -68,6 +68,9 @@ func main() {
 		os.Exit(0)
 	}()
 
+	mainArgs := capi.NewCMainArgsT()
+	mainArgs.SetWinHandle()
+
 	browser_process_handler := myBrowserProcessHandler{}
 	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
 	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
@@ -83,19 +86,20 @@ func main() {
 		capi.AllocCLoadHandlerT().Bind(&myLoadHandler{})
 	render_process_handler.AssocLoadHandlerT(load_handler)
 
-	capi.ExecuteProcess(app)
+	cef.ExecuteProcess(mainArgs, app)
 
 	initial_url := flag.String("url", internalHostName, "URL to Opne")
 	flag.Parse()
 
 	browser_process_handler.initial_url = *initial_url
 
-	s := capi.Settings{}
-	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
-	s.NoSandbox = 0
-	s.MultiThreadedMessageLoop = 0
-	// s.RemoteDebuggingPort = 8088
-	capi.Initialize(s, app)
+	s := capi.NewCSettingsT()
+	s.SetLogSeverity(capi.LogseverityWarning)
+	s.SetNoSandbox(0)
+	s.SetMultiThreadedMessageLoop(0)
+	s.SetRemoteDebuggingPort(8088)
+
+	cef.Initialize(mainArgs, s, app)
 
 	capi.RunMessageLoop()
 	defer capi.Shutdown()
@@ -140,10 +144,23 @@ func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProces
 	client := capi.AllocCClientT().Bind(&myClient{})
 	client.AssocLifeSpanHandlerT(life_span_handler)
 
-	capi.BrowserHostCreateBrowser(
-		"Cefingo Example",
-		bph.initial_url,
+	windowInfo := capi.NewCWindowInfoT()
+	windowInfo.SetStyle(capi.WinWsOverlappedwindow | capi.WinWsClipchildren |
+		capi.WinWsClipsiblings | capi.WinWsVisible)
+	windowInfo.SetParentWindow(nil)
+	windowInfo.SetX(capi.WinCwUseDefault)
+	windowInfo.SetY(capi.WinCwUseDefault)
+	windowInfo.SetWidth(capi.WinCwUseDefault)
+	windowInfo.SetHeight(capi.WinCwUseDefault)
+	windowInfo.SetWindowName("Cefingo Only Go Example")
+
+	browserSettings := capi.NewCBrowserSettingsT()
+
+	capi.BrowserHostCreateBrowser(windowInfo,
 		client,
+		bph.initial_url,
+		browserSettings,
+		nil, nil,
 	)
 }
 
@@ -246,9 +263,7 @@ func (rh *myResourceHandler) ProcessRequest(
 func (rh *myResourceHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
 	response *capi.CResponseT,
-	response_length *int64,
-	redirectUrl *string,
-) {
+) (int64, string) {
 	u, err := url.Parse(rh.GetCRequestT().GetUrl())
 	if err != nil {
 		capi.Panicf("L393: Error")
@@ -265,28 +280,27 @@ func (rh *myResourceHandler) GetResponseHeaders(
 	response.SetHeaderMap(h.CefObject())
 	// response.SetHeaderMap(h)
 
-	*response_length = int64(len(rh.text))
+	return int64(len(rh.text)), ""
 }
 
 // ReadResponse method is deprecated from cef 75
 func (rh *myResourceHandler) Read(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	bytes_read *int,
 	callback *capi.CResourceReadCallbackT,
-) bool {
+) (bool, int) {
 	l := min(len(data_out), len(rh.text) - rh.next)
 	for i := 0; i < l; i++ {
 		data_out[i] = rh.text[rh.next+i]
 	}
-	*bytes_read = l
+
 	rh.next = rh.next + l
 	capi.Logf("L409: %d, %d, %d", len(rh.text), l, rh.next)
 	ret := true
 	if l <= 0 {
 		ret = false
 	}
-	return ret
+	return ret, l
 }
 
 func min(x, y int) int {

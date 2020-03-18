@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	"github.com/turutcrane/cefingo/capi"
+	"github.com/turutcrane/cefingo/cef"
 	"github.com/vincent-petithory/dataurl"
 )
 
@@ -38,6 +39,9 @@ func main() {
 		os.Exit(0)
 	}()
 
+	mainArgs := capi.NewCMainArgsT()
+	mainArgs.SetWinHandle()
+
 	life_span_handler := capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
 
 	browser_process_handler := myBrowserProcessHandler{}
@@ -54,7 +58,7 @@ func main() {
 	render_process_handler := capi.AllocCRenderProcessHandlerT().Bind(&myRenderProcessHander{})
 	app.AssocRenderProcessHandlerT(render_process_handler)
 
-	capi.ExecuteProcess(app)
+	cef.ExecuteProcess(mainArgs, app)
 
 	html, err := makeHtlmString()
 	if err != nil {
@@ -63,11 +67,12 @@ func main() {
 	durl := dataurl.New(html, "text/html").String()
 	browser_process_handler.initial_url = durl
 
-	s := capi.Settings{}
-	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
-	s.NoSandbox = 0
-	s.MultiThreadedMessageLoop = 0
-	capi.Initialize(s, app)
+	s := capi.NewCSettingsT()
+	s.SetLogSeverity(capi.LogseverityWarning)
+	s.SetNoSandbox(0)
+	s.SetMultiThreadedMessageLoop(0)
+	s.SetRemoteDebuggingPort(8088)
+	cef.Initialize(mainArgs, s, app)
 
 	capi.RunMessageLoop()
 	defer capi.Shutdown()
@@ -93,10 +98,23 @@ type myBrowserProcessHandler struct {
 
 func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.Logf("L108:")
-	capi.BrowserHostCreateBrowser(
-		"Cefingo Example",
-		bph.initial_url,
+	windowInfo := capi.NewCWindowInfoT()
+	windowInfo.SetStyle(capi.WinWsOverlappedwindow | capi.WinWsClipchildren |
+		capi.WinWsClipsiblings | capi.WinWsVisible)
+	windowInfo.SetParentWindow(nil)
+	windowInfo.SetX(capi.WinCwUseDefault)
+	windowInfo.SetY(capi.WinCwUseDefault)
+	windowInfo.SetWidth(capi.WinCwUseDefault)
+	windowInfo.SetHeight(capi.WinCwUseDefault)
+	windowInfo.SetWindowName("Cefingo Wasm No-http Example")
+
+	browserSettings := capi.NewCBrowserSettingsT()
+
+	capi.BrowserHostCreateBrowser(windowInfo,
 		bph.GetCClientT(),
+		bph.initial_url,
+		browserSettings,
+		nil, nil,
 	)
 }
 

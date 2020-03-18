@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/turutcrane/cefingo/capi"
+	"github.com/turutcrane/cefingo/cef"
 	"goji.io"
 	"goji.io/pat"
 )
@@ -39,6 +40,9 @@ func main() {
 		os.Exit(0)
 	}()
 
+	mainArgs := capi.NewCMainArgsT()
+	mainArgs.SetWinHandle()
+
 	life_span_handler := capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
 
 	browser_process_handler := myBrowserProcessHandler{}
@@ -52,7 +56,7 @@ func main() {
 	app := capi.AllocCAppT().Bind(&myApp{})
 	app.AssocBrowserProcessHandlerT(browser_process_handler.GetCBrowserProcessHandlerT())
 
-	capi.ExecuteProcess(app)
+	cef.ExecuteProcess(mainArgs, app)
 
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -64,11 +68,12 @@ func main() {
 	browser_process_handler.initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
 	flag.Parse()
 
-	s := capi.Settings{}
-	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
-	s.NoSandbox = 0
-	s.MultiThreadedMessageLoop = 0
-	capi.Initialize(s, app)
+	s := capi.NewCSettingsT()
+	s.SetLogSeverity(capi.LogseverityWarning)
+	s.SetNoSandbox(0)
+	s.SetMultiThreadedMessageLoop(0)
+	s.SetRemoteDebuggingPort(8088)
+	cef.Initialize(mainArgs, s, app)
 
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/html/wasm_exec.js"), func(w http.ResponseWriter, r *http.Request) {
@@ -118,11 +123,22 @@ type myBrowserProcessHandler struct {
 
 func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.Logf("L108:")
-	capi.BrowserHostCreateBrowser(
-		"Cefingo Example",
-		*bph.initial_url,
+	windowInfo := capi.NewCWindowInfoT()
+	windowInfo.SetStyle(capi.WinWsOverlappedwindow | capi.WinWsClipchildren |
+		capi.WinWsClipsiblings | capi.WinWsVisible)
+	windowInfo.SetParentWindow(nil)
+	windowInfo.SetX(capi.WinCwUseDefault)
+	windowInfo.SetY(capi.WinCwUseDefault)
+	windowInfo.SetWidth(capi.WinCwUseDefault)
+	windowInfo.SetHeight(capi.WinCwUseDefault)
+	windowInfo.SetWindowName("Cefingo Wasm http Example")
+
+	browserSettings := capi.NewCBrowserSettingsT()
+
+	capi.BrowserHostCreateBrowser(windowInfo,
 		bph.GetCClientT(),
-	)
+		*bph.initial_url,
+		browserSettings, nil, nil)
 }
 
 type myClient struct {

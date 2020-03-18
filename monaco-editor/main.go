@@ -47,6 +47,9 @@ func main() {
 		os.Exit(0)
 	}()
 
+	mainArgs := capi.NewCMainArgsT()
+	mainArgs.SetWinHandle()
+
 	app := capi.AllocCAppT()
 
 	bph := capi.AllocCBrowserProcessHandlerT().Bind(&myBrowserProcessHandler{})
@@ -57,14 +60,14 @@ func main() {
 	rph.AssocLoadHandlerT(lh)
 	app.AssocRenderProcessHandlerT(rph)
 
-	capi.ExecuteProcess(app) // Exit if this is render process
+	cef.ExecuteProcess(mainArgs, app) // Exit if this is render process
 
-	s := capi.Settings{}
-	s.LogSeverity = capi.LogseverityWarning // C.LOGSEVERITY_WARNING // Show only warnings/errors
-	s.NoSandbox = 0
-	s.MultiThreadedMessageLoop = 0
-	s.RemoteDebuggingPort = 8088 // enabled if 1024-65535
-	capi.Initialize(s, app)
+	s := capi.NewCSettingsT()
+	s.SetLogSeverity(capi.LogseverityWarning)
+	s.SetNoSandbox(0)
+	s.SetMultiThreadedMessageLoop(0)
+	s.SetRemoteDebuggingPort(8088)
+	cef.Initialize(mainArgs, s, app)
 
 	capi.RunMessageLoop()
 
@@ -93,7 +96,25 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 		capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
 	client.AssocLifeSpanHandlerT(life_span_handler)
 
-	capi.BrowserHostCreateBrowser("Cefingo Example", "http://"+internalHostname+"/main", client)
+	windowInfo := capi.NewCWindowInfoT()
+	windowInfo.SetStyle(capi.WinWsOverlappedwindow | capi.WinWsClipchildren |
+		capi.WinWsClipsiblings | capi.WinWsVisible)
+	windowInfo.SetParentWindow(nil)
+	windowInfo.SetX(capi.WinCwUseDefault)
+	windowInfo.SetY(capi.WinCwUseDefault)
+	windowInfo.SetWidth(capi.WinCwUseDefault)
+	windowInfo.SetHeight(capi.WinCwUseDefault)
+	windowInfo.SetWindowName("Cefingo Monaco Editor Example")
+
+	browserSettings := capi.NewCBrowserSettingsT()
+
+	capi.BrowserHostCreateBrowser(
+		windowInfo,
+		client,
+		"http://"+internalHostname+"/main",
+		 browserSettings,
+		nil, nil,
+	)
 }
 
 type myClient struct {
@@ -237,9 +258,7 @@ func (rh *myResourceHandler) ProcessRequest(
 func (rh *myResourceHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
 	response *capi.CResponseT,
-	response_length *int64,
-	redirectUrl *string,
-) {
+) (response_length int64, redirectUrl string) {
 	capi.Logf("T391: %s: %d", rh.url.Path, rh.status)
 	response.SetMimeType(rh.mime)
 	// h := []capi.StringMap{
@@ -258,28 +277,27 @@ func (rh *myResourceHandler) GetResponseHeaders(
 	capi.StringMultimapAppend(h.CefObject(), "Content-Type", rh.mime+"; charset=utf-8")
 	response.SetHeaderMap(h.CefObject())
 
-	*response_length = int64(len(rh.bytes))
+	return int64(len(rh.bytes)), ""
 	// response.DumpHeaders()
 }
 
 func (rh *myResourceHandler) Read(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	bytes_read *int,
 	callback *capi.CResourceReadCallbackT,
-) bool {
+) (ret bool, bytes_read int) {
 	l := min(len(data_out), len(rh.bytes)-rh.next)
 	capi.Logf("T214: %s %d: %d, %d", rh.url, len(data_out), len(rh.bytes), l)
 	for i := 0; i < l; i++ {
 		data_out[i] = rh.bytes[rh.next+i]
 	}
 	rh.next = rh.next + l
-	*bytes_read = l
-	ret := true
+	bytes_read = l
+	ret = true
 	if l <= 0 {
 		ret = false
 	}
-	return ret
+	return ret, bytes_read
 }
 
 type notFoundHandler struct {
@@ -294,9 +312,7 @@ func init() {
 func (nfh *notFoundHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
 	response *capi.CResponseT,
-	response_length *int64,
-	redirectUrl *string,
-) {
+) (response_length int64, redirectUrl string) {
 	mime := "text/plain"
 	response.SetMimeType(mime)
 	// h := []capi.StringMap{
@@ -310,25 +326,25 @@ func (nfh *notFoundHandler) GetResponseHeaders(
 	response.SetHeaderMap(h.CefObject())
 
 	nfh.text = nfh.url.Path + " Not Found."
-	*response_length = int64(len(nfh.text))
+	response_length = int64(len(nfh.text))
 	// response.DumpHeaders()
+	return response_length, ""
 }
 
 func (nfh *notFoundHandler) ReadResponse(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	bytes_read *int,
 	callback *capi.CCallbackT,
-) bool {
+) (ret bool, bytes_read int) {
 	l := len(nfh.text)
 	buf := []byte(nfh.text)
 	l = min(l, len(data_out))
 	for i, b := range buf[:l] {
 		data_out[i] = b
 	}
-	*bytes_read = l
+	bytes_read = l
 	capi.Logf("T409: %d, %d", len(nfh.text), l)
-	return true
+	return true, bytes_read
 }
 
 func min(x, y int) int {
