@@ -242,7 +242,7 @@ type myResourceHandler struct {
 func init() {
 	var _ capi.ProcessRequestHandler = &myResourceHandler{}
 	var _ capi.GetResponseHeadersHandler = &myResourceHandler{}
-	var _ capi.ReadHandler = &myResourceHandler{}
+	var _ capi.CResourceHandlerTReadHandler = &myResourceHandler{}
 }
 
 func (rh *myResourceHandler) ProcessRequest(

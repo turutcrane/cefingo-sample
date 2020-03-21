@@ -17,6 +17,8 @@ github.com/stoewer/go-strcase v1.0.2/go.mod h1:eLfe5bL3qbL7ep/KafHzthxejrOF5J3xm
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/turutcrane/cefingo v0.2.2 h1:AFM0baNkGynnu81ozBgSAaR53XvkmsplKbd2Sr4GPMo=
 github.com/turutcrane/cefingo v0.2.2/go.mod h1:iRD3BoVTAKHILciZzix1dGD9YbxKv98FoQ0wi5FB3Fc=
+github.com/turutcrane/cefingo v0.2.4 h1:nwGpHCbQftfY/XmGRdZH2m5Hu0PmbK44mKCzniyO+Hc=
+github.com/turutcrane/cefingo v0.2.4/go.mod h1:iRD3BoVTAKHILciZzix1dGD9YbxKv98FoQ0wi5FB3Fc=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=
