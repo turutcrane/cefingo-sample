@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"runtime"
+	"time"
 
 	// "fmt"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/turutcrane/cefingo/capi"
@@ -52,7 +51,7 @@ func main() {
 	cef.ExecuteProcess(mainArgs, app)
 
 	browser_process_handler.initial_url = flag.String("url", "https://www.golang.org/", "URL")
-	flag.Parse()
+	flag.Parse() // Be after cef.ExecuteProcess or implement cef_browser_process_handler::on_before_child_process_launch
 
 	s := capi.NewCSettingsT()
 	s.SetLogSeverity(capi.LogseverityWarning)
@@ -62,20 +61,9 @@ func main() {
 	cef.Initialize(mainArgs, s, app)
 
 	capi.RunMessageLoop()
+	time.Sleep(2 * time.Second)
 	defer capi.Shutdown()
 
-}
-
-func addValueToContext(key interface{}, value interface{}) func(http.Handler) http.Handler {
-	return func(inner http.Handler) http.Handler {
-		mw := func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, key, value)
-			r = r.WithContext(ctx)
-			inner.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(mw)
-	}
 }
 
 type myLifeSpanHandler struct {
