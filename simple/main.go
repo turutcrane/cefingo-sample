@@ -11,6 +11,7 @@ import (
 
 	"github.com/turutcrane/cefingo/capi"
 	"github.com/turutcrane/cefingo/cef"
+	"github.com/turutcrane/win32api/win32const"
 )
 
 func init() {
@@ -33,7 +34,7 @@ func main() {
 	}()
 
 	mainArgs := capi.NewCMainArgsT()
-	mainArgs.SetWinHandle()
+	cef.CMainArgsTSetInstance(mainArgs)
 
 	life_span_handler := capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
 
@@ -84,13 +85,13 @@ type myBrowserProcessHandler struct {
 
 func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	windowInfo := capi.NewCWindowInfoT()
-	windowInfo.SetStyle(capi.WinWsOverlappedwindow | capi.WinWsClipchildren |
-		capi.WinWsClipsiblings | capi.WinWsVisible)
+	windowInfo.SetStyle(win32const.WsOverlappedwindow | win32const.WsClipchildren |
+		win32const.WsClipsiblings | win32const.WsVisible)
 	windowInfo.SetParentWindow(nil)
-	windowInfo.SetX(capi.WinCwUseDefault)
-	windowInfo.SetY(capi.WinCwUseDefault)
-	windowInfo.SetWidth(capi.WinCwUseDefault)
-	windowInfo.SetHeight(capi.WinCwUseDefault)
+	windowInfo.SetX(win32const.CwUsedefault)
+	windowInfo.SetY(win32const.CwUsedefault)
+	windowInfo.SetWidth(win32const.CwUsedefault)
+	windowInfo.SetHeight(win32const.CwUsedefault)
 	windowInfo.SetWindowName("Cefingo Simple Example")
 
 	browserSettings := capi.NewCBrowserSettingsT()
