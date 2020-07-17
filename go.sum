@@ -40,6 +40,8 @@ github.com/turutcrane/cefingo v0.2.11 h1:zB6k7/H6XedA6iRYMu45KuMmdjwX4z4L2sFIQod
 github.com/turutcrane/cefingo v0.2.11/go.mod h1:4znJfyqRhYnauvO3s76XhPpsxTRAs3QneqljwseBjHU=
 github.com/turutcrane/cefingo v0.2.12 h1:S8jfcCjisJ0mrt9BOYF7fOc4AKbcZb+mbtZTIt5xoxk=
 github.com/turutcrane/cefingo v0.2.12/go.mod h1:v06TccfaKKReFWKkat13yV/LyL4rugEDKelHhhnez8E=
+github.com/turutcrane/cefingo v0.3.0 h1:2vsjEOcx+J8EHzLxMdQJj0ear+ALWZlCRvUr4FOTgzw=
+github.com/turutcrane/cefingo v0.3.0/go.mod h1:v06TccfaKKReFWKkat13yV/LyL4rugEDKelHhhnez8E=
 github.com/turutcrane/win32api v0.0.0-20200525130019-e8ae9093fffa h1:bnVpLtemOyEdF8ai5xTS41fK6S7QQlQDlbdu9txo3Kw=
 github.com/turutcrane/win32api v0.0.0-20200525130019-e8ae9093fffa/go.mod h1:BeL/w3MUv2nKqI55DOZU8GJtdoOhn/H9IquPqmkjegA=
 github.com/turutcrane/win32api v0.0.0-20200605141717-ae9b42fc16f4 h1:GMt+APrkA6eu3EBCydaO8+DMRWNvvj/sFWjvv8z/JXI=

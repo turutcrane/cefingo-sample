@@ -44,20 +44,23 @@ func main() {
 	mainArgs := capi.NewCMainArgsT()
 	cef.CMainArgsTSetInstance(mainArgs)
 
-	life_span_handler := capi.AllocCLifeSpanHandlerT().Bind(&myLifeSpanHandler{})
+	client := &myClient{}
+	capi.AllocCClientT().Bind(client)
+	defer client.GetCClientT().UnbindAll()
 
-	browser_process_handler := myBrowserProcessHandler{}
-	capi.AllocCBrowserProcessHandlerT().Bind(&browser_process_handler)
-	defer browser_process_handler.SetCBrowserProcessHandlerT(nil)
+	capi.AllocCLifeSpanHandlerT().Bind(client)
+	defer client.GetCLifeSpanHandlerT().UnbindAll()
 
-	client := capi.AllocCClientT().Bind(&myClient{})
-	client.AssocLifeSpanHandlerT(life_span_handler)
-	browser_process_handler.SetCClientT(client)
+	app := &myApp{}
+	capi.AllocCAppT().Bind(app)
+	defer app.GetCAppT().UnbindAll()
 
-	app := capi.AllocCAppT().Bind(&myApp{})
-	app.AssocBrowserProcessHandlerT(browser_process_handler.GetCBrowserProcessHandlerT())
+	capi.AllocCBrowserProcessHandlerT().Bind(app)
+	defer app.GetCBrowserProcessHandlerT().UnbindAll()
 
-	cef.ExecuteProcess(mainArgs, app)
+	app.SetCClientT(client.GetCClientT())
+
+	cef.ExecuteProcess(mainArgs, app.GetCAppT())
 
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -66,7 +69,7 @@ func main() {
 	addr := l.Addr().String()
 	log.Println("L33:", addr)
 
-	browser_process_handler.initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
+	app.initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
 	flag.Parse()
 
 	s := capi.NewCSettingsT()
@@ -74,7 +77,7 @@ func main() {
 	s.SetNoSandbox(0)
 	s.SetMultiThreadedMessageLoop(0)
 	s.SetRemoteDebuggingPort(8088)
-	cef.Initialize(mainArgs, s, app)
+	cef.Initialize(mainArgs, s, app.GetCAppT())
 
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/html/wasm_exec.js"), func(w http.ResponseWriter, r *http.Request) {
@@ -97,32 +100,35 @@ func main() {
 	ctx := context.Background()
 	srv.Shutdown(ctx)
 }
+
 func init() {
-	var _ capi.OnBeforeCloseHandler = myLifeSpanHandler{}
+	// capi.CLifeSpanHandlerT handler
+	var _ capi.OnBeforeCloseHandler = &myClient{}
 }
 
-type myLifeSpanHandler struct {
-}
-
-func (myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (*myClient) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
 	capi.Logf("L89:")
 	capi.QuitMessageLoop()
 }
 
 func init() {
-	var _ capi.OnContextInitializedHandler = myBrowserProcessHandler{}
+	var _ capi.OnContextInitializedHandler = &myBrowserProcessHandler{}
 }
 
 type myBrowserProcessHandler struct {
 	// this reference forms an UNgabagecollectable circular reference
-	// To GC, call myBrowserProcessHandler.SetCBrowserProcessHandlerT(nil)
+	// To GC, call myBrowserProcessHandler.GetCBrowserProcessHandlerT().UnbindAll()
 	capi.RefToCBrowserProcessHandlerT
 
 	capi.RefToCClientT
 	initial_url *string
 }
 
-func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
+func (bph *myBrowserProcessHandler) GetBrowserProcessHandler(*capi.CAppT) *capi.CBrowserProcessHandlerT {
+	return bph.GetCBrowserProcessHandlerT()
+}
+
+func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	capi.Logf("L108:")
 	windowInfo := capi.NewCWindowInfoT()
 	windowInfo.SetStyle(win32const.WsOverlappedwindow | win32const.WsClipchildren |
@@ -143,7 +149,23 @@ func (bph myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProces
 }
 
 type myClient struct {
+	capi.RefToCClientT
+	capi.RefToCLifeSpanHandlerT
+}
+
+func init() {
+	var _ capi.GetLifeSpanHandlerHandler = (*myClient)(nil)
+}
+
+func (client *myClient) GetLifeSpanHandler(c *capi.CClientT) *capi.CLifeSpanHandlerT {
+	return client.GetCLifeSpanHandlerT()
 }
 
 type myApp struct {
+	capi.RefToCAppT
+	myBrowserProcessHandler
+}
+
+func init() {
+	var _ capi.GetBrowserProcessHandlerHandler = (*myApp)(nil)
 }
