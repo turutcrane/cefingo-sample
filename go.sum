@@ -52,12 +52,18 @@ github.com/turutcrane/cefingo v0.3.4 h1:/l4vErgnNAMp2GeC79dbW0orVbm5NAd3AOLm6H9p
 github.com/turutcrane/cefingo v0.3.4/go.mod h1:v06TccfaKKReFWKkat13yV/LyL4rugEDKelHhhnez8E=
 github.com/turutcrane/cefingo v0.3.5 h1:1p2YWs+xLyg0I6Op6u58CBAtt8F1zkPC543CqOj3vSs=
 github.com/turutcrane/cefingo v0.3.5/go.mod h1:v06TccfaKKReFWKkat13yV/LyL4rugEDKelHhhnez8E=
+github.com/turutcrane/cefingo v0.3.7 h1:KuDs0PAQolLWZr+UpK1XfZ1avaHxXCDoYAOsGxbHrC0=
+github.com/turutcrane/cefingo v0.3.7/go.mod h1:YlBWcNSZ6VvBgqsZKz6m3NrKIdVpDTns0XTNfwNT+1E=
 github.com/turutcrane/win32api v0.0.0-20200525130019-e8ae9093fffa h1:bnVpLtemOyEdF8ai5xTS41fK6S7QQlQDlbdu9txo3Kw=
 github.com/turutcrane/win32api v0.0.0-20200525130019-e8ae9093fffa/go.mod h1:BeL/w3MUv2nKqI55DOZU8GJtdoOhn/H9IquPqmkjegA=
 github.com/turutcrane/win32api v0.0.0-20200605141717-ae9b42fc16f4 h1:GMt+APrkA6eu3EBCydaO8+DMRWNvvj/sFWjvv8z/JXI=
 github.com/turutcrane/win32api v0.0.0-20200605141717-ae9b42fc16f4/go.mod h1:F/liWnAzrVX/ZM7aVrxhV5Ox2FSPt8if7oK6yjr6e48=
 github.com/turutcrane/win32api v0.0.0-20200812041137-994c86949a37 h1:e6spPsaG08Jzg21GqZqA9/CU0EuAGW0X61GZN571b9c=
 github.com/turutcrane/win32api v0.0.0-20200812041137-994c86949a37/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=
+github.com/turutcrane/win32api v0.0.0-20201005134946-b82454e51c58 h1:YfV5/7LYnlpLO/T893/V579PsioUrlyUaP8YR0yt/DU=
+github.com/turutcrane/win32api v0.0.0-20201005134946-b82454e51c58/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=
+github.com/turutcrane/win32api v0.0.0-20201121062900-30ba51003370 h1:FjnDSQlkBONLc3yTz5raLeh+yrJB3q2ZM7UDmEzmotY=
+github.com/turutcrane/win32api v0.0.0-20201121062900-30ba51003370/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=
@@ -84,6 +90,8 @@ golang.org/x/sys v0.0.0-20200515095857-1151b9dac4a9 h1:YTzHMGlqJu67/uEo1lBv0n3wB
 golang.org/x/sys v0.0.0-20200515095857-1151b9dac4a9/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200523222454-059865788121 h1:rITEj+UZHYC927n8GT97eC3zrpzXdb/voyeOuVKS46o=
 golang.org/x/sys v0.0.0-20200523222454-059865788121/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20201223074533-0d417f636930 h1:vRgIt+nup/B/BwIS0g2oC0haq0iqbV3ZA+u6+0TlNCo=
+golang.org/x/sys v0.0.0-20201223074533-0d417f636930/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/tools v0.0.0-20200207112602-59bd84bb0c52/go.mod h1:TB2adYChydJhpapKDTa4BR/hXlZSLoq2Wpct/0txZ28=

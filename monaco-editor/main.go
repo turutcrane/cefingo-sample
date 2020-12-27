@@ -425,7 +425,7 @@ func (*myLoadHandler) OnLoadEnd(
 	if context.Enter() {
 		defer context.Exit()
 
-		c, err := v8.GetContext()
+		c, err := v8.GetCurrentContext()
 		if err != nil {
 			capi.Logf("E292: %+v", err)
 			return

@@ -365,7 +365,7 @@ func (*myLoadHandler) OnLoadEnd(
 	if context.Enter() {
 		defer context.Exit()
 
-		c, err := v8.GetContext()
+		c, err := v8.GetCurrentContext()
 		if err != nil {
 			capi.Logf("280: get context; %+v", err)
 			return
@@ -375,7 +375,7 @@ func (*myLoadHandler) OnLoadEnd(
 		b1, err := c.GetElementById("B1")
 		if err == nil {
 			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(object v8.Value, event v8.Value) error {
-				c1, err := v8.GetContext()
+				c1, err := v8.GetCurrentContext()
 				if err != nil {
 					return errors.Wrap(err, "get context")
 				}
@@ -391,7 +391,7 @@ func (*myLoadHandler) OnLoadEnd(
 		if err == nil {
 			b2.AddEventListener(v8.EventClick, v8.EventHandlerFunc(
 				func(object v8.Value, event v8.Value) error {
-					c2, err := v8.GetContext()
+					c2, err := v8.GetCurrentContext()
 					if err != nil {
 						return errors.Wrap(err, "E311: get context")
 					}
