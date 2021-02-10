@@ -17,7 +17,7 @@ import (
 	"github.com/turutcrane/cefingo/capi"
 	"github.com/turutcrane/cefingo/cef"
 	"github.com/turutcrane/cefingo/v8api"
-	"github.com/turutcrane/win32api/win32const"
+	"github.com/turutcrane/win32api"
 
 	"github.com/rakyll/statik/fs"
 	_ "github.com/turutcrane/cefingo-sample/monaco-editor/statik"
@@ -114,13 +114,13 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	capi.AllocCLifeSpanHandlerT().Bind(client)
 
 	windowInfo := capi.NewCWindowInfoT()
-	windowInfo.SetStyle(win32const.WsOverlappedwindow | win32const.WsClipchildren |
-		win32const.WsClipsiblings | win32const.WsVisible)
+	windowInfo.SetStyle(win32api.WsOverlappedwindow | win32api.WsClipchildren |
+		win32api.WsClipsiblings | win32api.WsVisible)
 	windowInfo.SetParentWindow(nil)
-	windowInfo.SetX(win32const.CwUsedefault)
-	windowInfo.SetY(win32const.CwUsedefault)
-	windowInfo.SetWidth(win32const.CwUsedefault)
-	windowInfo.SetHeight(win32const.CwUsedefault)
+	windowInfo.SetX(win32api.CwUsedefault)
+	windowInfo.SetY(win32api.CwUsedefault)
+	windowInfo.SetWidth(win32api.CwUsedefault)
+	windowInfo.SetHeight(win32api.CwUsedefault)
 	windowInfo.SetWindowName("Cefingo Monaco Editor Example")
 
 	browserSettings := capi.NewCBrowserSettingsT()
