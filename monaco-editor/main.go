@@ -1,8 +1,7 @@
 package main
 
-//go:generate statik -src package/min -f
-
 import (
+	"embed"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,10 +17,12 @@ import (
 	"github.com/turutcrane/cefingo/cef"
 	"github.com/turutcrane/cefingo/v8api"
 	"github.com/turutcrane/win32api"
-
-	"github.com/rakyll/statik/fs"
-	_ "github.com/turutcrane/cefingo-sample/monaco-editor/statik"
 )
+
+//go:embed package
+var monacoPkg embed.FS
+
+var monacoFs = http.FileSystem(http.FS(monacoPkg))
 
 func init() {
 	// capi.Initialize(i.e. cef_initialize) and some function should be called on
@@ -82,6 +83,7 @@ type myApp struct {
 	myBrowserProcessHandler
 	myRenderProcessHandler
 }
+
 func init() {
 	var _ capi.GetBrowserProcessHandlerHandler = (*myApp)(nil)
 	var _ capi.GetRenderProcessHandlerHandler = (*myApp)(nil)
@@ -129,7 +131,7 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 		windowInfo,
 		client.GetCClientT(),
 		"http://"+internalHostname+"/main",
-		 browserSettings,
+		browserSettings,
 		nil, nil,
 	)
 }
@@ -142,6 +144,7 @@ type myClient struct {
 func init() {
 	var _ capi.GetLifeSpanHandlerHandler = (*myClient)(nil)
 }
+
 type myLifeSpanHandler struct {
 	capi.RefToCLifeSpanHandlerT
 }
@@ -162,7 +165,7 @@ func (*myLifeSpanHandler) OnAfterCreated(self *capi.CLifeSpanHandlerT, brwoser *
 func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
 	capi.Logf("T72:")
 	capi.QuitMessageLoop()
-	if client, ok  := self.Handler().(*myClient); ok {
+	if client, ok := self.Handler().(*myClient); ok {
 		capi.Logf("L124:")
 		client.GetCClientT().UnbindAll()
 	}
@@ -192,16 +195,6 @@ var main_text = e.Html5(e.Attr(a.Lang("ja")),
 	),
 )
 
-var statikFs http.FileSystem
-
-func init() {
-	var err error
-	statikFs, err = fs.New()
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
 func init() {
 	var _ capi.CreateHandler = (*mySchemeHandlerFactory)(nil)
 }
@@ -226,7 +219,7 @@ func (factory *mySchemeHandlerFactory) Create(
 				bytes: []byte(main_text),
 			})
 		} else if strings.HasPrefix(url.Path, "/vs/") {
-			f, err := statikFs.Open(url.Path)
+			f, err := monacoFs.Open("package/min" + url.Path)
 			if err != nil {
 				log.Panicf("T163: %s %v\n", url.Path, err)
 			}
@@ -390,6 +383,7 @@ type myRenderProcessHandler struct {
 	capi.RefToCRenderProcessHandlerT
 	myLoadHandler
 }
+
 func init() {
 	var _ capi.CRenderProcessHandlerTGetLoadHandlerHandler = (*myRenderProcessHandler)(nil)
 }

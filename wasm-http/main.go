@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -17,6 +18,12 @@ import (
 	"goji.io"
 	"goji.io/pat"
 )
+
+//go:embed html
+var htmlFs embed.FS
+
+//go:embed wasm
+var wasmFs embed.FS
 
 func init() {
 	// capi.Initialize(i.e. cef_initialize) and some function should be called on
@@ -83,8 +90,9 @@ func main() {
 	mux.HandleFunc(pat.Get("/html/wasm_exec.js"), func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, runtime.GOROOT()+"/misc/wasm/wasm_exec.js")
 	})
-	mux.Handle(pat.Get("/html/*"), http.StripPrefix("/html", http.FileServer(http.Dir("./html"))))
-	mux.Handle(pat.Get("/wasm/*"), http.StripPrefix("/wasm", http.FileServer(http.Dir("./wasm"))))
+
+	mux.Handle(pat.Get("/html/*"), http.FileServer(http.FS(htmlFs)))
+	mux.Handle(pat.Get("/wasm/*"), http.FileServer(http.FS(wasmFs)))
 
 	srv := &http.Server{Handler: mux}
 

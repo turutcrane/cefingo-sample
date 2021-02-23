@@ -2,11 +2,12 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"runtime"
 
 	// "fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -17,6 +18,12 @@ import (
 	"github.com/turutcrane/win32api"
 	"github.com/vincent-petithory/dataurl"
 )
+
+//go:embed html
+var htmlFs embed.FS
+
+//go:embed wasm/test.wasm
+var testWasm []byte
 
 func init() {
 	// capi.Initialize(i.e. cef_initialize) and some function should be called on
@@ -193,12 +200,12 @@ func (*myRenderProcessHandler) OnContextCreated(self *capi.CRenderProcessHandler
 		capi.Logf("T127: can not set you")
 	}
 
-	wasm, err := ioutil.ReadFile("wasm/test.wasm") // just pass the file name
-	if err != nil {
-		log.Panicln("L163:", err)
-	}
-	capi.Logf("L166: %d", len(wasm))
-	v8wasm := capi.CreateArrayBuffer(wasm)
+	// wasm, err := ioutil.ReadFile("wasm/test.wasm") // just pass the file name
+	// if err != nil {
+	// 	log.Panicln("L163:", err)
+	// }
+	capi.Logf("L166: %d", len(testWasm))
+	v8wasm := capi.CreateArrayBuffer(testWasm)
 	capi.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
 
 	if ok := my.SetValueBykey("wasm", v8wasm, capi.V8PropertyAttributeNone); !ok {
@@ -209,11 +216,16 @@ func (*myRenderProcessHandler) OnContextCreated(self *capi.CRenderProcessHandler
 }
 
 func makeHtlmString() ([]byte, error) {
-	wasmjs, err := ioutil.ReadFile(runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
+	r, err := os.Open(runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
 	if err != nil {
 		return nil, err
 	}
-	temp, err := template.ParseFiles("html/wasm_exec_ab.html.template")
+	wasmjs, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	temp, err := template.ParseFS(htmlFs, "html/wasm_exec_ab.html.template")
+	// temp, err := template.ParseFiles("html/wasm_exec_ab.html.template")
 	if err != nil {
 		return nil, err
 	}
