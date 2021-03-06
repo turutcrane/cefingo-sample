@@ -2,9 +2,7 @@ package main
 
 import (
 	"embed"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"runtime"
@@ -21,8 +19,6 @@ import (
 
 //go:embed package
 var monacoPkg embed.FS
-
-var monacoFs = http.FileSystem(http.FS(monacoPkg))
 
 func init() {
 	// capi.Initialize(i.e. cef_initialize) and some function should be called on
@@ -219,11 +215,7 @@ func (factory *mySchemeHandlerFactory) Create(
 				bytes: []byte(main_text),
 			})
 		} else if strings.HasPrefix(url.Path, "/vs/") {
-			f, err := monacoFs.Open("package/min" + url.Path)
-			if err != nil {
-				log.Panicf("T163: %s %v\n", url.Path, err)
-			}
-			content, err := ioutil.ReadAll(f)
+			content, err := monacoPkg.ReadFile("package/min" + url.Path)
 			if err != nil {
 				capi.Panicf("T155: %s, %v", url.Path, err)
 			}
