@@ -118,7 +118,8 @@ func (lsh *myLifeSpanHandler) GetLifeSpanHandler(*capi.CClientT) *capi.CLifeSpan
 	return lsh.GetCLifeSpanHandlerT()
 }
 
-func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
+	defer browser.ForceUnref()
 	capi.QuitMessageLoop()
 	if client, ok  := self.Handler().(*myClient); ok {
 		capi.Logf("L124:")
@@ -210,10 +211,11 @@ func (rph *myRenderProcessHander) GetRenderProcessHandler(*capi.CAppT) *capi.CRe
 }
 
 func (*myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT,
-	brower *capi.CBrowserT,
+	browser *capi.CBrowserT,
 	frame *capi.CFrameT,
 	context *capi.CV8contextT,
 ) {
+	defer browser.ForceUnref()
 	global := context.GetGlobal()
 
 	my := capi.V8valueCreateObject(nil, nil)
@@ -245,6 +247,7 @@ func (factory *mySchemeHandlerFactory) Create(
 	scheme_name string,
 	request *capi.CRequestT,
 ) (handler *capi.CResourceHandlerT) {
+	defer browser.ForceUnref()
 	url, err := url.Parse(request.GetUrl())
 	if err != nil {
 		return nil
@@ -360,6 +363,7 @@ func (*myLoadHandler) OnLoadEnd(
 	frame *capi.CFrameT,
 	httpStatusCode int,
 ) {
+	defer browser.ForceUnref()
 	context := frame.GetV8context()
 
 	if context.Enter() {

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"runtime"
 
 	// "fmt"
@@ -29,8 +30,8 @@ func init() {
 	// capi.Initialize(i.e. cef_initialize) and some function should be called on
 	// the main application thread to initialize the CEF browser process
 	runtime.LockOSThread()
-	// prefix := fmt.Sprintf("[%d] ", os.Getpid())
-	// capi.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
+	prefix := fmt.Sprintf("[%d] ", os.Getpid())
+	capi.Logger = log.New(os.Stdout, prefix, log.LstdFlags)
 	// capi.RefCountLogOutput(true)
 
 }
@@ -51,7 +52,13 @@ func main() {
 	mainArgs := capi.NewCMainArgsT()
 	cef.CMainArgsTSetInstance(mainArgs)
 
+	doCef(mainArgs)
+	runtime.GC()
 
+	capi.Shutdown()
+}
+
+func doCef(mainArgs *capi.CMainArgsT) {
 	client := &myClient{}
 	capi.AllocCClientT().Bind(client)
 	defer client.GetCClientT().UnbindAll()
@@ -88,7 +95,6 @@ func main() {
 	cef.Initialize(mainArgs, s, app.GetCAppT())
 
 	capi.RunMessageLoop()
-	defer capi.Shutdown()
 
 }
 
@@ -100,7 +106,9 @@ func init() {
 	var _ capi.OnBeforeCloseHandler = (*myLifeSpanHandler)(nil)
 }
 
-func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
+	defer browser.ForceUnref()
+
 	capi.Logf("L89:")
 	capi.QuitMessageLoop()
 }
@@ -183,10 +191,11 @@ func (rph *myRenderProcessHandler) GetRenderProcessHandler(*capi.CAppT) *capi.CR
 }
 
 func (*myRenderProcessHandler) OnContextCreated(self *capi.CRenderProcessHandlerT,
-	brower *capi.CBrowserT,
+	browser *capi.CBrowserT,
 	frame *capi.CFrameT,
 	context *capi.CV8contextT,
 ) {
+	defer browser.ForceUnref()
 	global := context.GetGlobal()
 
 	my := capi.V8valueCreateObject(nil, nil)

@@ -154,11 +154,13 @@ func init() {
 	var _ capi.OnBeforeCloseHandler = (*myLifeSpanHandler)(nil)
 }
 
-func (*myLifeSpanHandler) OnAfterCreated(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (*myLifeSpanHandler) OnAfterCreated(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
+	defer browser.ForceUnref()
 	capi.Logf("T68:")
 }
 
-func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
+	defer browser.ForceUnref()
 	capi.Logf("T72:")
 	capi.QuitMessageLoop()
 	if client, ok := self.Handler().(*myClient); ok {
@@ -202,6 +204,7 @@ func (factory *mySchemeHandlerFactory) Create(
 	scheme_name string,
 	request *capi.CRequestT,
 ) (handler *capi.CResourceHandlerT) {
+	defer browser.ForceUnref()
 	url, err := url.Parse(request.GetUrl())
 	if err != nil {
 		capi.Logf("T356: err:%v", err)
@@ -402,6 +405,7 @@ func (*myLoadHandler) OnLoadEnd(
 	frame *capi.CFrameT,
 	httpStatusCode int,
 ) {
+	defer browser.ForceUnref()
 	context := frame.GetV8context()
 	url, _ := url.Parse(frame.GetUrl()) //
 	if url.Path != "/main" {

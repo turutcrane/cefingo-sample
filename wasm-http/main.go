@@ -51,6 +51,37 @@ func main() {
 	mainArgs := capi.NewCMainArgsT()
 	cef.CMainArgsTSetInstance(mainArgs)
 
+	mux := goji.NewMux()
+	mux.HandleFunc(pat.Get("/html/wasm_exec.js"), func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, runtime.GOROOT()+"/misc/wasm/wasm_exec.js")
+	})
+
+	mux.Handle(pat.Get("/html/*"), http.FileServer(http.FS(htmlFs)))
+	mux.Handle(pat.Get("/wasm/*"), http.FileServer(http.FS(wasmFs)))
+
+	srv := &http.Server{Handler: mux}
+
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		log.Fatalln("L38:", err)
+	}
+
+	go func() {
+		if err := srv.Serve(l); err != http.ErrServerClosed {
+			log.Fatalln("L50:", err)
+		}
+	}()
+
+	doCef(mainArgs, l.Addr().String())
+	runtime.GC()
+
+	capi.Shutdown()
+
+	ctx := context.Background()
+	srv.Shutdown(ctx)
+}
+
+func doCef(mainArgs *capi.CMainArgsT, addr string) {
 	client := &myClient{}
 	capi.AllocCClientT().Bind(client)
 	defer client.GetCClientT().UnbindAll()
@@ -69,13 +100,6 @@ func main() {
 
 	cef.ExecuteProcess(mainArgs, app.GetCAppT())
 
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		log.Fatalln("L38:", err)
-	}
-	addr := l.Addr().String()
-	log.Println("L33:", addr)
-
 	app.initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
 	flag.Parse()
 
@@ -86,41 +110,23 @@ func main() {
 	s.SetRemoteDebuggingPort(8088)
 	cef.Initialize(mainArgs, s, app.GetCAppT())
 
-	mux := goji.NewMux()
-	mux.HandleFunc(pat.Get("/html/wasm_exec.js"), func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, runtime.GOROOT()+"/misc/wasm/wasm_exec.js")
-	})
-
-	mux.Handle(pat.Get("/html/*"), http.FileServer(http.FS(htmlFs)))
-	mux.Handle(pat.Get("/wasm/*"), http.FileServer(http.FS(wasmFs)))
-
-	srv := &http.Server{Handler: mux}
-
-	go func() {
-		if err := srv.Serve(l); err != http.ErrServerClosed {
-			log.Fatalln("L50:", err)
-		}
-	}()
-
 	capi.RunMessageLoop()
-	defer capi.Shutdown()
 
-	ctx := context.Background()
-	srv.Shutdown(ctx)
 }
 
 func init() {
 	// capi.CLifeSpanHandlerT handler
-	var _ capi.OnBeforeCloseHandler = &myClient{}
+	var _ capi.OnBeforeCloseHandler = (*myClient)(nil)
 }
 
-func (*myClient) OnBeforeClose(self *capi.CLifeSpanHandlerT, brwoser *capi.CBrowserT) {
+func (*myClient) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
 	capi.Logf("L89:")
 	capi.QuitMessageLoop()
+	browser.ForceUnref()
 }
 
 func init() {
-	var _ capi.OnContextInitializedHandler = &myBrowserProcessHandler{}
+	var _ capi.OnContextInitializedHandler = (*myBrowserProcessHandler)(nil)
 }
 
 type myBrowserProcessHandler struct {
