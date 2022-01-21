@@ -15,6 +15,12 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/turutcrane/cefingo v0.3.8 h1:WR8xtdOS0xzAnjlAOUPFlwCWFlsCMnv2Qio4+zv6Yp8=
 github.com/turutcrane/cefingo v0.3.8/go.mod h1:7ME+YPh8FG+TU8pR85vJRn9PHJ6LdNHCKemUvEHC7pY=
+github.com/turutcrane/cefingo v0.4.1 h1:MepkjiGRINxGR1DGzKeU9tyC7pp/FFyfPxvcdwMsi5k=
+github.com/turutcrane/cefingo v0.4.1/go.mod h1:5IFcdm1LEncCb6mtBlXD4rom13uLs1aEnjV3PeCtIqQ=
+github.com/turutcrane/cefingo v0.4.2 h1:spvfMq5TzLxzepfBtHSrg7OLfrqf1aMPAmGou2Tz/Fk=
+github.com/turutcrane/cefingo v0.4.2/go.mod h1:5IFcdm1LEncCb6mtBlXD4rom13uLs1aEnjV3PeCtIqQ=
+github.com/turutcrane/cefingo v0.4.3 h1:wR28ig2gr6jBiyTGcrZMSY9+9/GU51951kemB0E6QgM=
+github.com/turutcrane/cefingo v0.4.3/go.mod h1:5IFcdm1LEncCb6mtBlXD4rom13uLs1aEnjV3PeCtIqQ=
 github.com/turutcrane/win32api v0.0.0-20201121062900-30ba51003370/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=
 github.com/turutcrane/win32api v0.0.0-20210210115856-df13c2b046a6 h1:/YsiT576MAYo1evElc05aXOw2hVpvIw9wBaYc0HFuAU=
 github.com/turutcrane/win32api v0.0.0-20210210115856-df13c2b046a6/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=

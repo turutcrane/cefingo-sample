@@ -72,7 +72,6 @@ func main() {
 	mainArgs := capi.NewCMainArgsT()
 	cef.CMainArgsTSetInstance(mainArgs)
 
-
 	app := &myApp{}
 	capi.AllocCAppT().Bind(app)
 	defer app.GetCAppT().UnbindAll()
@@ -119,9 +118,8 @@ func (lsh *myLifeSpanHandler) GetLifeSpanHandler(*capi.CClientT) *capi.CLifeSpan
 }
 
 func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
-	defer browser.ForceUnref()
 	capi.QuitMessageLoop()
-	if client, ok  := self.Handler().(*myClient); ok {
+	if client, ok := self.Handler().(*myClient); ok {
 		capi.Logf("L124:")
 		client.GetCClientT().UnbindAll()
 	}
@@ -160,10 +158,12 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	windowInfo.SetStyle(win32api.WsOverlappedwindow | win32api.WsClipchildren |
 		win32api.WsClipsiblings | win32api.WsVisible)
 	windowInfo.SetParentWindow(nil)
-	windowInfo.SetX(win32api.CwUsedefault)
-	windowInfo.SetY(win32api.CwUsedefault)
-	windowInfo.SetWidth(win32api.CwUsedefault)
-	windowInfo.SetHeight(win32api.CwUsedefault)
+	bound := capi.NewCRectT()
+	bound.SetX(win32api.CwUsedefault)
+	bound.SetY(win32api.CwUsedefault)
+	bound.SetWidth(win32api.CwUsedefault)
+	bound.SetHeight(win32api.CwUsedefault)
+	windowInfo.SetBounds(*bound)
 	windowInfo.SetWindowName("Cefingo Only Go Example")
 
 	browserSettings := capi.NewCBrowserSettingsT()
@@ -196,6 +196,7 @@ func init() {
 	var _ capi.GetBrowserProcessHandlerHandler = (*myApp)(nil)
 	var _ capi.GetRenderProcessHandlerHandler = (*myApp)(nil)
 }
+
 type myRenderProcessHander struct {
 	capi.RefToCRenderProcessHandlerT
 	myLoadHandler
@@ -215,12 +216,12 @@ func (*myRenderProcessHander) OnContextCreated(self *capi.CRenderProcessHandlerT
 	frame *capi.CFrameT,
 	context *capi.CV8contextT,
 ) {
-	defer browser.ForceUnref()
 	global := context.GetGlobal()
 
 	my := capi.V8valueCreateObject(nil, nil)
-
+	defer my.Unref()
 	msg := capi.V8valueCreateString("Cefingo Hello")
+	defer msg.Unref()
 
 	if ok := global.SetValueBykey("my", my, capi.V8PropertyAttributeNone); !ok {
 		capi.Logf("T163: can not set my")
@@ -247,7 +248,6 @@ func (factory *mySchemeHandlerFactory) Create(
 	scheme_name string,
 	request *capi.CRequestT,
 ) (handler *capi.CResourceHandlerT) {
-	defer browser.ForceUnref()
 	url, err := url.Parse(request.GetUrl())
 	if err != nil {
 		return nil
@@ -257,7 +257,7 @@ func (factory *mySchemeHandlerFactory) Create(
 
 	if url.Hostname() == internalHostName {
 		rh := myResourceHandler{}
-		rh.SetCRequestT(request)
+		rh.requestUrl = url
 		switch url.Path {
 		case "/":
 			rh.mime = "text/html"
@@ -268,14 +268,15 @@ func (factory *mySchemeHandlerFactory) Create(
 		}
 		handler = capi.AllocCResourceHandlerT().Bind(&rh)
 	}
-	return handler
+	return capi.PassCResourceHandlerT(handler)
 }
 
 type myResourceHandler struct {
-	capi.RefToCRequestT
-	text []byte
-	mime string
-	next int
+	// capi.RefToCRequestT
+	requestUrl *url.URL
+	text       []byte
+	mime       string
+	next       int
 }
 
 func init() {
@@ -289,7 +290,11 @@ func (rh *myResourceHandler) ProcessRequest(
 	request *capi.CRequestT,
 	callback *capi.CCallbackT,
 ) bool {
-	rh.SetCRequestT(request)
+	u , err := url.Parse(request.GetUrl())
+	if err != nil {
+		capi.Panicf("L393: Error")
+	}
+	rh.requestUrl = u
 	capi.Logf("L339: %s", request.GetUrl())
 	callback.Cont()
 	return true
@@ -299,11 +304,8 @@ func (rh *myResourceHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
 	response *capi.CResponseT,
 ) (int64, string) {
-	u, err := url.Parse(rh.GetCRequestT().GetUrl())
-	if err != nil {
-		capi.Panicf("L393: Error")
-	}
-	capi.Logf("L391: %s", u.Path)
+
+	capi.Logf("L391: %s", rh.requestUrl.Path)
 	response.SetMimeType(rh.mime)
 	// h := []capi.StringMap{
 	// 	{Key: "Content-Type", Value: rh.mime + "; charset=utf-8"},
@@ -324,7 +326,7 @@ func (rh *myResourceHandler) Read(
 	data_out []byte,
 	callback *capi.CResourceReadCallbackT,
 ) (bool, int) {
-	l := min(len(data_out), len(rh.text) - rh.next)
+	l := min(len(data_out), len(rh.text)-rh.next)
 	for i := 0; i < l; i++ {
 		data_out[i] = rh.text[rh.next+i]
 	}
@@ -363,8 +365,8 @@ func (*myLoadHandler) OnLoadEnd(
 	frame *capi.CFrameT,
 	httpStatusCode int,
 ) {
-	defer browser.ForceUnref()
 	context := frame.GetV8context()
+	defer context.Unref()
 
 	if context.Enter() {
 		defer context.Exit()

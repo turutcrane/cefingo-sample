@@ -73,7 +73,7 @@ func doCef(mainArgs *capi.CMainArgsT) {
 	capi.AllocCBrowserProcessHandlerT().Bind(app)
 	defer app.GetCBrowserProcessHandlerT().UnbindAll()
 	
-	app.SetCClientT(client.GetCClientT())
+	app.myBrowserProcessHandler.client = client
 
 	capi.AllocCRenderProcessHandlerT().Bind(app)
 	defer app.GetCRenderProcessHandlerT().UnbindAll()
@@ -107,18 +107,14 @@ func init() {
 }
 
 func (*myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
-	defer browser.ForceUnref()
-
 	capi.Logf("L89:")
 	capi.QuitMessageLoop()
 }
 
 type myBrowserProcessHandler struct {
-	// this reference forms an UNgabagecollectable circular reference
-	// To GC, call myBrowserProcessHandler.GetCBrowserProcessHandlerT().Unbind()
 	capi.RefToCBrowserProcessHandlerT
 
-	capi.RefToCClientT
+	client *myClient
 	initial_url string
 }
 
@@ -136,16 +132,18 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	windowInfo.SetStyle(win32api.WsOverlappedwindow | win32api.WsClipchildren |
 		win32api.WsClipsiblings | win32api.WsVisible)
 	windowInfo.SetParentWindow(nil)
-	windowInfo.SetX(win32api.CwUsedefault)
-	windowInfo.SetY(win32api.CwUsedefault)
-	windowInfo.SetWidth(win32api.CwUsedefault)
-	windowInfo.SetHeight(win32api.CwUsedefault)
+	bound := capi.NewCRectT()
+	bound.SetX(win32api.CwUsedefault)
+	bound.SetY(win32api.CwUsedefault)
+	bound.SetWidth(win32api.CwUsedefault)
+	bound.SetHeight(win32api.CwUsedefault)
+	windowInfo.SetBounds(*bound)
 	windowInfo.SetWindowName("Cefingo Wasm No-http Example")
 
 	browserSettings := capi.NewCBrowserSettingsT()
 
 	capi.BrowserHostCreateBrowser(windowInfo,
-		bph.GetCClientT(),
+		bph.client.GetCClientT(),
 		bph.initial_url,
 		browserSettings,
 		nil, nil,
@@ -195,7 +193,6 @@ func (*myRenderProcessHandler) OnContextCreated(self *capi.CRenderProcessHandler
 	frame *capi.CFrameT,
 	context *capi.CV8contextT,
 ) {
-	defer browser.ForceUnref()
 	global := context.GetGlobal()
 
 	my := capi.V8valueCreateObject(nil, nil)
@@ -215,6 +212,7 @@ func (*myRenderProcessHandler) OnContextCreated(self *capi.CRenderProcessHandler
 	// }
 	capi.Logf("L166: %d", len(testWasm))
 	v8wasm := capi.CreateArrayBuffer(testWasm)
+	defer v8wasm.Unref()
 	capi.Logf("L168: %T, %v", v8wasm, unsafe.Pointer(v8wasm))
 
 	if ok := my.SetValueBykey("wasm", v8wasm, capi.V8PropertyAttributeNone); !ok {

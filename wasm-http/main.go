@@ -92,11 +92,10 @@ func doCef(mainArgs *capi.CMainArgsT, addr string) {
 	app := &myApp{}
 	capi.AllocCAppT().Bind(app)
 	defer app.GetCAppT().UnbindAll()
+	app.myBrowserProcessHandler.client = client
 
 	capi.AllocCBrowserProcessHandlerT().Bind(app)
 	defer app.GetCBrowserProcessHandlerT().UnbindAll()
-
-	app.SetCClientT(client.GetCClientT())
 
 	cef.ExecuteProcess(mainArgs, app.GetCAppT())
 
@@ -111,6 +110,7 @@ func doCef(mainArgs *capi.CMainArgsT, addr string) {
 	cef.Initialize(mainArgs, s, app.GetCAppT())
 
 	capi.RunMessageLoop()
+	capi.Logln("T112:")
 
 }
 
@@ -122,7 +122,6 @@ func init() {
 func (*myClient) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
 	capi.Logf("L89:")
 	capi.QuitMessageLoop()
-	browser.ForceUnref()
 }
 
 func init() {
@@ -134,7 +133,8 @@ type myBrowserProcessHandler struct {
 	// To GC, call myBrowserProcessHandler.GetCBrowserProcessHandlerT().UnbindAll()
 	capi.RefToCBrowserProcessHandlerT
 
-	capi.RefToCClientT
+	client *myClient
+	// capi.RefToCClientT
 	initial_url *string
 }
 
@@ -148,16 +148,18 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	windowInfo.SetStyle(win32api.WsOverlappedwindow | win32api.WsClipchildren |
 		win32api.WsClipsiblings | win32api.WsVisible)
 	windowInfo.SetParentWindow(nil)
-	windowInfo.SetX(win32api.CwUsedefault)
-	windowInfo.SetY(win32api.CwUsedefault)
-	windowInfo.SetWidth(win32api.CwUsedefault)
-	windowInfo.SetHeight(win32api.CwUsedefault)
+	bound := capi.NewCRectT()
+	bound.SetX(win32api.CwUsedefault)
+	bound.SetY(win32api.CwUsedefault)
+	bound.SetWidth(win32api.CwUsedefault)
+	bound.SetHeight(win32api.CwUsedefault)
+	windowInfo.SetBounds(*bound)
 	windowInfo.SetWindowName("Cefingo Wasm http Example")
 
 	browserSettings := capi.NewCBrowserSettingsT()
 
 	capi.BrowserHostCreateBrowser(windowInfo,
-		bph.GetCClientT(),
+		bph.client.GetCClientT(),
 		*bph.initial_url,
 		browserSettings, nil, nil)
 }

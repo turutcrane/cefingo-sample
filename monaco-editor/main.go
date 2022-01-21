@@ -115,10 +115,12 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	windowInfo.SetStyle(win32api.WsOverlappedwindow | win32api.WsClipchildren |
 		win32api.WsClipsiblings | win32api.WsVisible)
 	windowInfo.SetParentWindow(nil)
-	windowInfo.SetX(win32api.CwUsedefault)
-	windowInfo.SetY(win32api.CwUsedefault)
-	windowInfo.SetWidth(win32api.CwUsedefault)
-	windowInfo.SetHeight(win32api.CwUsedefault)
+	bound := capi.NewCRectT()
+	bound.SetX(win32api.CwUsedefault)
+	bound.SetY(win32api.CwUsedefault)
+	bound.SetWidth(win32api.CwUsedefault)
+	bound.SetHeight(win32api.CwUsedefault)
+	windowInfo.SetBounds(*bound)
 	windowInfo.SetWindowName("Cefingo Monaco Editor Example")
 
 	browserSettings := capi.NewCBrowserSettingsT()
@@ -155,12 +157,10 @@ func init() {
 }
 
 func (*myLifeSpanHandler) OnAfterCreated(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
-	defer browser.ForceUnref()
 	capi.Logf("T68:")
 }
 
 func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
-	defer browser.ForceUnref()
 	capi.Logf("T72:")
 	capi.QuitMessageLoop()
 	if client, ok := self.Handler().(*myClient); ok {
@@ -204,7 +204,6 @@ func (factory *mySchemeHandlerFactory) Create(
 	scheme_name string,
 	request *capi.CRequestT,
 ) (handler *capi.CResourceHandlerT) {
-	defer browser.ForceUnref()
 	url, err := url.Parse(request.GetUrl())
 	if err != nil {
 		capi.Logf("T356: err:%v", err)
@@ -327,7 +326,7 @@ type notFoundHandler struct {
 
 func init() {
 	var _ capi.GetResponseHeadersHandler = (*notFoundHandler)(nil)
-	var _ capi.ReadResponseHandler = (*notFoundHandler)(nil)
+	var _ capi.CResourceHandlerTReadHandler = (*notFoundHandler)(nil)
 }
 func (nfh *notFoundHandler) GetResponseHeaders(
 	self *capi.CResourceHandlerT,
@@ -351,10 +350,10 @@ func (nfh *notFoundHandler) GetResponseHeaders(
 	return response_length, ""
 }
 
-func (nfh *notFoundHandler) ReadResponse(
+func (nfh *notFoundHandler) Read(
 	self *capi.CResourceHandlerT,
 	data_out []byte,
-	callback *capi.CCallbackT,
+	callback *capi.CResourceReadCallbackT,
 ) (ret bool, bytes_read int) {
 	l := len(nfh.text)
 	buf := []byte(nfh.text)
@@ -364,7 +363,11 @@ func (nfh *notFoundHandler) ReadResponse(
 	}
 	bytes_read = l
 	capi.Logf("T409: %d, %d", len(nfh.text), l)
-	return true, bytes_read
+
+	if bytes_read > 0 {
+		ret = true
+	}
+	return ret, bytes_read
 }
 
 func min(x, y int) int {
@@ -405,8 +408,9 @@ func (*myLoadHandler) OnLoadEnd(
 	frame *capi.CFrameT,
 	httpStatusCode int,
 ) {
-	defer browser.ForceUnref()
 	context := frame.GetV8context()
+	defer context.Unref()
+
 	url, _ := url.Parse(frame.GetUrl()) //
 	if url.Path != "/main" {
 		capi.Logf("T283: Not Handled LoadEnd: httpCode:%d, %s", httpStatusCode, frame.GetUrl())
