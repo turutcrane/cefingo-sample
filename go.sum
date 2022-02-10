@@ -21,6 +21,8 @@ github.com/turutcrane/cefingo v0.4.2 h1:spvfMq5TzLxzepfBtHSrg7OLfrqf1aMPAmGou2Tz
 github.com/turutcrane/cefingo v0.4.2/go.mod h1:5IFcdm1LEncCb6mtBlXD4rom13uLs1aEnjV3PeCtIqQ=
 github.com/turutcrane/cefingo v0.4.3 h1:wR28ig2gr6jBiyTGcrZMSY9+9/GU51951kemB0E6QgM=
 github.com/turutcrane/cefingo v0.4.3/go.mod h1:5IFcdm1LEncCb6mtBlXD4rom13uLs1aEnjV3PeCtIqQ=
+github.com/turutcrane/cefingo v0.4.4 h1:wTxK9XxfYFo5mTKS4/5tiRJZT89zg0WAgSHUhJ18BPs=
+github.com/turutcrane/cefingo v0.4.4/go.mod h1:5IFcdm1LEncCb6mtBlXD4rom13uLs1aEnjV3PeCtIqQ=
 github.com/turutcrane/win32api v0.0.0-20201121062900-30ba51003370/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=
 github.com/turutcrane/win32api v0.0.0-20210210115856-df13c2b046a6 h1:/YsiT576MAYo1evElc05aXOw2hVpvIw9wBaYc0HFuAU=
 github.com/turutcrane/win32api v0.0.0-20210210115856-df13c2b046a6/go.mod h1:0M5CGcICREX8XFggo8rfqtqaScbCghwJuGIldKFTpUk=
