@@ -68,29 +68,29 @@ func doCef(mainArgs *capi.CMainArgsT) {
 	s.SetRemoteDebuggingPort(8088)
 
 	app := &myApp{}
-	capi.AllocCAppT().Bind(app)
-	defer app.GetCAppT().UnbindAll()
+	app.app = capi.NewCAppT(app)
+	defer app.app.Unref()
 
 	client := &myClient{}
-	capi.AllocCClientT().Bind(client)
-	defer client.GetCClientT().UnbindAll()
+	client.client = capi.NewCClientT(client)
+	defer client.client.Unref() // UnbindAll()
 
-	capi.AllocCLifeSpanHandlerT().Bind(client)
-	defer client.GetCLifeSpanHandlerT().UnbindAll()
+	client.lifeSpanHandler = capi.NewCLifeSpanHandlerT(client)
+	defer client.lifeSpanHandler.Unref() // .UnbindAll()
 
-	capi.AllocCBrowserProcessHandlerT().Bind(app)
-	defer app.GetCBrowserProcessHandlerT().UnbindAll()
+	app.browserProcessHandler = capi.NewCBrowserProcessHandlerT(app)
+	defer app.browserProcessHandler.Unref() // .UnbindAll()
 
 	// app.SetCClientT(client.GetCClientT())
 	// defer app.SetCClientT(nil)
 	app.client = client
 
-	cef.ExecuteProcess(mainArgs, app.GetCAppT())
+	cef.ExecuteProcess(mainArgs, app.app)
 
 	app.initial_url = flag.String("url", "https://www.golang.org/", "URL")
 	flag.Parse() // Be after cef.ExecuteProcess or implement cef_browser_process_handler::on_before_child_process_launch
 
-	cef.Initialize(mainArgs, s, app.GetCAppT())
+	cef.Initialize(mainArgs, s, app.app)
 
 	capi.RunMessageLoop()
 	if !capi.CurrentlyOn(capi.TidUi) {
@@ -119,14 +119,14 @@ func (app *myApp) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
 	}
 
 	capi.BrowserHostCreateBrowser(windowInfo,
-			app.client.GetCClientT(),
-			*app.initial_url,
-			browserSettings, nil, nil)
+		app.client.client,
+		*app.initial_url,
+		browserSettings, nil, nil)
 }
 
 type myClient struct {
-	capi.RefToCClientT
-	capi.RefToCLifeSpanHandlerT
+	client          *capi.CClientT
+	lifeSpanHandler *capi.CLifeSpanHandlerT
 }
 
 func init() {
@@ -138,7 +138,7 @@ func init() {
 }
 
 func (client *myClient) GetLifeSpanHandler(self *capi.CClientT) *capi.CLifeSpanHandlerT {
-	return client.GetCLifeSpanHandlerT()
+	return client.lifeSpanHandler
 }
 
 func (client *myClient) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *capi.CBrowserT) {
@@ -152,10 +152,10 @@ func (client *myClient) OnBeforeClose(self *capi.CLifeSpanHandlerT, browser *cap
 }
 
 type myApp struct {
-	capi.RefToCAppT
-	capi.RefToCBrowserProcessHandlerT
+	app                   *capi.CAppT
+	browserProcessHandler *capi.CBrowserProcessHandlerT
 	// capi.RefToCClientT
-	client *myClient
+	client      *myClient
 	initial_url *string
 }
 
@@ -169,5 +169,5 @@ func init() {
 }
 
 func (app *myApp) GetBrowserProcessHandler(self *capi.CAppT) *capi.CBrowserProcessHandlerT {
-	return app.GetCBrowserProcessHandlerT()
+	return app.browserProcessHandler
 }

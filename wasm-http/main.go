@@ -83,21 +83,21 @@ func main() {
 
 func doCef(mainArgs *capi.CMainArgsT, addr string) {
 	client := &myClient{}
-	capi.AllocCClientT().Bind(client)
-	defer client.GetCClientT().UnbindAll()
+	client.client = capi.NewCClientT(client)
+	defer client.client.Unref() // .UnbindAll()
 
-	capi.AllocCLifeSpanHandlerT().Bind(client)
-	defer client.GetCLifeSpanHandlerT().UnbindAll()
+	client.lifeSpanHandler =  capi.NewCLifeSpanHandlerT(client)
+	defer client.lifeSpanHandler.Unref() // .UnbindAll()
 
 	app := &myApp{}
-	capi.AllocCAppT().Bind(app)
-	defer app.GetCAppT().UnbindAll()
+	app.app = capi.NewCAppT(app)
+	defer app.app.Unref() //.UnbindAll()
 	app.myBrowserProcessHandler.client = client
 
-	capi.AllocCBrowserProcessHandlerT().Bind(app)
-	defer app.GetCBrowserProcessHandlerT().UnbindAll()
+	app.browserProcessHandler = capi.NewCBrowserProcessHandlerT(app)
+	defer app.browserProcessHandler.Unref() // .UnbindAll()
 
-	cef.ExecuteProcess(mainArgs, app.GetCAppT())
+	cef.ExecuteProcess(mainArgs, app.app)
 
 	app.initial_url = flag.String("url", fmt.Sprintf("http://%s/html/wasm_exec.html", addr), "URL")
 	flag.Parse()
@@ -107,7 +107,7 @@ func doCef(mainArgs *capi.CMainArgsT, addr string) {
 	s.SetNoSandbox(false)
 	s.SetMultiThreadedMessageLoop(false)
 	s.SetRemoteDebuggingPort(8088)
-	cef.Initialize(mainArgs, s, app.GetCAppT())
+	cef.Initialize(mainArgs, s, app.app)
 
 	capi.RunMessageLoop()
 	capi.Logln("T112:")
@@ -131,7 +131,7 @@ func init() {
 type myBrowserProcessHandler struct {
 	// this reference forms an UNgabagecollectable circular reference
 	// To GC, call myBrowserProcessHandler.GetCBrowserProcessHandlerT().UnbindAll()
-	capi.RefToCBrowserProcessHandlerT
+	browserProcessHandler  *capi.CBrowserProcessHandlerT
 
 	client *myClient
 	// capi.RefToCClientT
@@ -139,7 +139,7 @@ type myBrowserProcessHandler struct {
 }
 
 func (bph *myBrowserProcessHandler) GetBrowserProcessHandler(*capi.CAppT) *capi.CBrowserProcessHandlerT {
-	return bph.GetCBrowserProcessHandlerT()
+	return bph.browserProcessHandler
 }
 
 func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
@@ -159,14 +159,14 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	browserSettings := capi.NewCBrowserSettingsT()
 
 	capi.BrowserHostCreateBrowser(windowInfo,
-		bph.client.GetCClientT(),
+		bph.client.client,
 		*bph.initial_url,
 		browserSettings, nil, nil)
 }
 
 type myClient struct {
-	capi.RefToCClientT
-	capi.RefToCLifeSpanHandlerT
+	client *capi.CClientT
+	lifeSpanHandler *capi.CLifeSpanHandlerT
 }
 
 func init() {
@@ -174,11 +174,11 @@ func init() {
 }
 
 func (client *myClient) GetLifeSpanHandler(c *capi.CClientT) *capi.CLifeSpanHandlerT {
-	return client.GetCLifeSpanHandlerT()
+	return client.lifeSpanHandler
 }
 
 type myApp struct {
-	capi.RefToCAppT
+	app *capi.CAppT
 	myBrowserProcessHandler
 }
 

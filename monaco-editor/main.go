@@ -48,26 +48,26 @@ func main() {
 	cef.CMainArgsTSetInstance(mainArgs)
 
 	app := &myApp{}
-	capi.AllocCAppT().Bind(app)
-	defer app.GetCAppT().UnbindAll()
+	app.app = capi.NewCAppT(app)
+	defer app.app.Unref() // .UnbindAll()
 
-	capi.AllocCBrowserProcessHandlerT().Bind(app)
-	defer app.GetCBrowserProcessHandlerT().UnbindAll()
+	app.browserProcessHandler = capi.NewCBrowserProcessHandlerT(app)
+	defer app.browserProcessHandler.Unref() // .UnbindAll()
 
-	capi.AllocCRenderProcessHandlerT().Bind(app)
-	defer app.GetCBrowserProcessHandlerT().UnbindAll()
+	app.renderProcessHandler = capi.NewCRenderProcessHandlerT(app)
+	defer app.browserProcessHandler.Unref() // .UnbindAll()
 
-	capi.AllocCLoadHandlerT().Bind(app)
-	defer app.GetCLoadHandlerT().UnbindAll()
+	app.loadHandler = capi.NewCLoadHandlerT(app)
+	defer app.loadHandler.Unref() //.UnbindAll()
 
-	cef.ExecuteProcess(mainArgs, app.GetCAppT()) // Exit if this is render process
+	cef.ExecuteProcess(mainArgs, app.app) // Exit if this is render process
 
 	s := capi.NewCSettingsT()
 	s.SetLogSeverity(capi.LogseverityWarning)
 	s.SetNoSandbox(false)
 	s.SetMultiThreadedMessageLoop(false)
 	s.SetRemoteDebuggingPort(8088)
-	cef.Initialize(mainArgs, s, app.GetCAppT())
+	cef.Initialize(mainArgs, s, app.app)
 
 	capi.RunMessageLoop()
 
@@ -75,7 +75,7 @@ func main() {
 }
 
 type myApp struct {
-	capi.RefToCAppT
+	app *capi.CAppT
 	myBrowserProcessHandler
 	myRenderProcessHandler
 }
@@ -86,7 +86,7 @@ func init() {
 }
 
 type myBrowserProcessHandler struct {
-	capi.RefToCBrowserProcessHandlerT
+	browserProcessHandler *capi.CBrowserProcessHandlerT
 }
 
 func init() {
@@ -96,7 +96,7 @@ func init() {
 const internalHostname = "cefingo.internal"
 
 func (bph *myBrowserProcessHandler) GetBrowserProcessHandler(*capi.CAppT) *capi.CBrowserProcessHandlerT {
-	return bph.GetCBrowserProcessHandlerT()
+	return bph.browserProcessHandler
 }
 
 func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProcessHandlerT) {
@@ -104,12 +104,13 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 	// Register the custom scheme handler factory.
 	// RegisterSchemeHandlerFactory()
 
-	factory := capi.AllocCSchemeHandlerFactoryT().Bind(&mySchemeHandlerFactory{})
+	factory := capi.NewCSchemeHandlerFactoryT(&mySchemeHandlerFactory{})
+	defer factory.Unref()
 	capi.RegisterSchemeHandlerFactory("http", internalHostname, factory)
 
 	client := &myClient{}
-	capi.AllocCClientT().Bind(client)
-	capi.AllocCLifeSpanHandlerT().Bind(client)
+	client.client = capi.NewCClientT(client)
+	client.lifeSpanHandler = capi.NewCLifeSpanHandlerT(client)
 
 	windowInfo := capi.NewCWindowInfoT()
 	windowInfo.SetStyle(win32api.WsOverlappedwindow | win32api.WsClipchildren |
@@ -127,7 +128,7 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 
 	capi.BrowserHostCreateBrowser(
 		windowInfo,
-		client.GetCClientT(),
+		client.client,
 		"http://"+internalHostname+"/main",
 		browserSettings,
 		nil, nil,
@@ -135,7 +136,7 @@ func (bph *myBrowserProcessHandler) OnContextInitialized(sef *capi.CBrowserProce
 }
 
 type myClient struct {
-	capi.RefToCClientT
+	client *capi.CClientT
 	myLifeSpanHandler
 }
 
@@ -144,11 +145,11 @@ func init() {
 }
 
 type myLifeSpanHandler struct {
-	capi.RefToCLifeSpanHandlerT
+	lifeSpanHandler *capi.CLifeSpanHandlerT
 }
 
 func (lsh *myLifeSpanHandler) GetLifeSpanHandler(*capi.CClientT) *capi.CLifeSpanHandlerT {
-	return lsh.GetCLifeSpanHandlerT()
+	return lsh.lifeSpanHandler
 }
 
 func init() {
@@ -165,7 +166,7 @@ func (lsh *myLifeSpanHandler) OnBeforeClose(self *capi.CLifeSpanHandlerT, browse
 	capi.QuitMessageLoop()
 	if client, ok := self.Handler().(*myClient); ok {
 		capi.Logf("L124:")
-		client.GetCClientT().UnbindAll()
+		client.client.Unref() // .UnbindAll()
 	}
 	self.UnbindAll()
 }
@@ -211,7 +212,7 @@ func (factory *mySchemeHandlerFactory) Create(
 	}
 	if url.Hostname() == internalHostname {
 		if url.Path == "/main" {
-			handler = capi.AllocCResourceHandlerT().Bind(&myResourceHandler{
+			handler = capi.NewCResourceHandlerT(&myResourceHandler{
 				url:   url,
 				mime:  "text/html",
 				bytes: []byte(main_text),
@@ -222,19 +223,19 @@ func (factory *mySchemeHandlerFactory) Create(
 				capi.Panicf("T155: %s, %v", url.Path, err)
 			}
 			capi.Logf("T181: %s", url.Path)
-			handler = capi.AllocCResourceHandlerT().Bind(&myResourceHandler{
+			handler = capi.NewCResourceHandlerT(&myResourceHandler{
 				url:   url,
 				mime:  ftMime(url.Path),
 				bytes: content,
 			})
 		} else {
 			capi.Logf("T132: Not Found: %s, %s", url.Hostname(), url.Path)
-			handler = capi.AllocCResourceHandlerT().Bind(&notFoundHandler{
+			handler = capi.NewCResourceHandlerT(&notFoundHandler{
 				url: url,
 			})
 		}
 	}
-	return handler
+	return handler.Pass()
 }
 
 func ftMime(fn string) (mime string) {
@@ -378,7 +379,7 @@ func min(x, y int) int {
 }
 
 type myRenderProcessHandler struct {
-	capi.RefToCRenderProcessHandlerT
+	renderProcessHandler *capi.CRenderProcessHandlerT
 	myLoadHandler
 }
 
@@ -387,15 +388,15 @@ func init() {
 }
 
 func (rph *myRenderProcessHandler) GetRenderProcessHandler(*capi.CAppT) *capi.CRenderProcessHandlerT {
-	return rph.GetCRenderProcessHandlerT()
+	return rph.renderProcessHandler
 }
 
 type myLoadHandler struct {
-	capi.RefToCLoadHandlerT
+	loadHandler *capi.CLoadHandlerT
 }
 
 func (lh *myLoadHandler) GetLoadHandler(*capi.CRenderProcessHandlerT) *capi.CLoadHandlerT {
-	return lh.GetCLoadHandlerT()
+	return lh.loadHandler
 }
 
 func init() {
