@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/turutcrane/cefingo/capi"
 	"github.com/turutcrane/cefingo/cef"
 	"github.com/turutcrane/cefingo/v8api"
@@ -384,7 +383,7 @@ func (*myLoadHandler) OnLoadEnd(
 			b1.AddEventListener(v8.EventClick, v8.EventHandlerFunc(func(object v8.Value, event v8.Value) error {
 				c1, err := v8.GetCurrentContext()
 				if err != nil {
-					return errors.Wrap(err, "get context")
+					return fmt.Errorf("E386: get context: %w", err)
 				}
 				// _, err := c1.Eval("alert('B1 Clicked: ' + my.msg);")
 				c1.Alertf("B1 Clicked !!: %s", time.Now().Format("03:04:05"))
@@ -400,7 +399,7 @@ func (*myLoadHandler) OnLoadEnd(
 				func(object v8.Value, event v8.Value) error {
 					c2, err := v8.GetCurrentContext()
 					if err != nil {
-						return errors.Wrap(err, "E311: get context")
+						return fmt.Errorf("E311: get context: %w", err)
 					}
 					p1, err := c2.GetElementById("DIV1")
 					if err == nil {
